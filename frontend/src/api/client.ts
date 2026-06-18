@@ -1,9 +1,15 @@
 // api/client.ts - Capa centralizada de comunicación con el backend.
 // Toda llamada a la API pasa por aquí. Esto tiene varias ventajas:
-//   1. La URL base está en UN solo lugar (gracias al proxy de Vite, basta con /api).
+//   1. La URL base está en UN solo lugar.
 //   2. Los errores se manejan de forma consistente.
 //   3. Los tipos de retorno son explícitos, ayudando al editor a autocompletar.
 //   4. El header Authorization se agrega automáticamente cuando hay sesión activa.
+
+// En desarrollo VITE_API_URL no está definida → BASE_URL es '' → las rutas /api/...
+// son relativas y el proxy de vite.config.ts las redirige al backend local.
+// En producción VITE_API_URL = 'https://impuestos-vehiculos.onrender.com' → las
+// llamadas van directamente al backend en Render.
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 import type {
   VehiculoConVigencias,
@@ -36,7 +42,7 @@ async function request<T>(
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const response = await fetch(url, {
+  const response = await fetch(`${BASE_URL}${url}`, {
     ...options,
     headers,
   });
@@ -162,7 +168,7 @@ export async function cargarCSVVehiculos(archivo: File): Promise<ResultadoCargaC
   const formData = new FormData();
   formData.append('archivo', archivo);
 
-  const response = await fetch('/api/admin/csv/vehiculos', {
+  const response = await fetch(`${BASE_URL}/api/admin/csv/vehiculos`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
