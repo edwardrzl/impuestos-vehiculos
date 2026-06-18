@@ -19,7 +19,8 @@ import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
 
 const app = express();
-const PORT = 3001;
+//const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // === MIDDLEWARES GLOBALES ===
 
