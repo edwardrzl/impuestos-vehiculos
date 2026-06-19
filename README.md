@@ -1,123 +1,180 @@
-# Prisma Impuestos — Portal de impuestos vehiculares
+# Impuestos Vehiculares
 
-Proyecto educativo full-stack para consultar y pagar impuestos vehiculares por placa.
+Portal de consulta y pago de impuestos vehiculares municipales. Los ciudadanos pueden consultar el estado de sus obligaciones por placa y procesar pagos en línea. Incluye panel de administración protegido con JWT para gestionar vehículos, vigencias y carga masiva de datos vía CSV.
 
-**Stack:**
-- **Backend:** Node.js + Express + SQLite, todo en TypeScript.
-- **Frontend:** React + Vite + TailwindCSS + React Router, en TypeScript.
+**Deploy:** https://impuestos-vehiculos.onrender.com
+            https://impuestos-vehiculos-mdqi132d1-edwardrzls-projects.vercel.app
 
 ---
 
-## 📁 Estructura del proyecto
+## Tech Stack
+
+| Capa | Tecnologías |
+|------|-------------|
+| Backend | Node.js, Express 4, TypeScript, better-sqlite3 |
+| Auth | jsonwebtoken, bcryptjs |
+| Frontend | React 18, Vite, TypeScript, TailwindCSS 3, React Router v6 |
+| Extras | jsPDF, Lucide React, Multer |
+
+---
+
+## Estructura del proyecto
 
 ```
-prisma-impuestos/
-│
+impuestos-vehiculos/
 ├── backend/
+│   ├── src/
+│   │   ├── server.ts                   # Entry point: Express + middlewares + routers
+│   │   ├── db.ts                       # Conexión SQLite y DDL
+│   │   ├── seed.ts                     # Datos de prueba (exporta runSeed())
+│   │   ├── config.ts                   # Variables de entorno centralizadas
+│   │   ├── types.ts
+│   │   ├── errors.ts                   # Clases de error HTTP
+│   │   ├── routes/
+│   │   │   ├── vehiculos.ts
+│   │   │   ├── pagos.ts
+│   │   │   ├── auth.ts
+│   │   │   └── admin.ts                # Todas las rutas admin pasan por authMiddleware
+│   │   ├── controllers/
+│   │   │   ├── vehiculoController.ts
+│   │   │   ├── pagoController.ts
+│   │   │   ├── authController.ts
+│   │   │   ├── adminPanelController.ts
+│   │   │   ├── csvController.ts
+│   │   │   └── vigenciaController.ts
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   └── middleware/
+│   │       └── authMiddleware.ts
+│   ├── prisma.db                       # SQLite (no versionado)
+│   ├── .env.example
 │   ├── package.json
-│   ├── tsconfig.json
-│   ├── prisma.db                
-│   └── src/
-│       ├── server.ts            ← entrada: configura Express y monta routers
-│       ├── db.ts                ← conexión a SQLite + creación de tablas
-│       ├── seed.ts              ← script de datos de prueba
-│       ├── types.ts             ← interfaces TS compartidas
-│       └── routes/
-│           ├── vehiculos.ts     ← GET /api/vehiculos/:placa
-│           └── pagos.ts         ← POST /api/pagos, GET /api/pagos/:ref
+│   └── tsconfig.json
 │
 └── frontend/
+    ├── src/
+    │   ├── main.tsx
+    │   ├── App.tsx
+    │   ├── api/
+    │   │   └── client.ts               # Capa HTTP centralizada (usa BASE_URL / VITE_API_URL)
+    │   ├── auth/
+    │   │   └── session.ts              # Persistencia del JWT en sessionStorage
+    │   ├── components/
+    │   │   ├── admin/                  # StatsCards, TablaVehiculos, FiltrosVehiculos,
+    │   │   │                           # DetalleVehiculo, CargaCSV, CrearVigencias
+    │   │   ├── BuscadorPlaca.tsx
+    │   │   ├── VigenciaRow.tsx
+    │   │   ├── BarraPago.tsx
+    │   │   ├── ModalComprobante.tsx
+    │   │   ├── ModalPasarela.tsx
+    │   │   ├── Header.tsx
+    │   │   └── ProtectedRoute.tsx
+    │   ├── hooks/
+    │   │   └── useVehiculo.ts
+    │   ├── pages/
+    │   │   ├── Home.tsx
+    │   │   ├── VehicleDetail.tsx
+    │   │   ├── Admin.tsx
+    │   │   └── Login.tsx
+    │   ├── types.ts
+    │   └── utils/
+    │       └── format.ts
+    ├── vite.config.ts
     ├── package.json
-    ├── tsconfig.json
-    ├── vite.config.ts           ← configuración Vite + proxy /api
-    ├── tailwind.config.js
-    ├── postcss.config.js
-    ├── index.html
-    └── src/
-        ├── main.tsx             ← entrada de React
-        ├── App.tsx              ← define las rutas
-        ├── index.css            ← estilos globales con Tailwind
-        ├── types.ts             ← tipos espejo del backend
-        ├── api/
-        │   └── client.ts        ← funciones que llaman a la API
-        ├── components/
-        │   ├── Header.tsx
-        │   ├── BuscadorPlaca.tsx
-        │   ├── VigenciaRow.tsx
-        │   ├── BarraPago.tsx
-        │   └── ModalComprobante.tsx
-        ├── hooks/
-        │   └── useVehiculo.ts   ← custom hook para cargar un vehículo
-        ├── pages/
-        │   ├── Home.tsx
-        │   └── VehicleDetail.tsx
-        └── utils/
-            └── format.ts        ← formateo de moneda y fechas
+    └── tsconfig.json
 ```
 
 ---
 
-## 📡 Endpoints del backend
+## Setup local
 
-| Método | Ruta                          | Descripción                              |
-| ------ | ----------------------------- | ---------------------------------------- |
-| GET    | `/api/health`                 | Healthcheck                              |
-| GET    | `/api/vehiculos/:placa`       | Vehículo + vigencias + resumen           |
-| POST   | `/api/pagos`                  | Procesa pago de una o varias vigencias   |
-| GET    | `/api/pagos/:referencia`      | Consulta un pago por su referencia       |
+**Prerequisitos:** Node.js 18+, npm 9+
 
----
+### Backend
 
-## 📚 Orden recomendado de lectura del código
+```bash
+cd backend
+npm install
+cp .env.example .env   # Completar JWT_SECRET
+npm run dev            # http://localhost:3001
+```
 
-Para que entiendas el proyecto entero, te recomiendo leerlo así:
+La base de datos SQLite se crea automáticamente en `backend/prisma.db` al primer arranque. Para poblar con datos de prueba:
 
-### Backend (1º)
+```bash
+npm run seed
+```
 
-1. `backend/package.json` → qué librerías usa.
-2. `backend/tsconfig.json` → configuración TypeScript.
-3. `backend/src/types.ts` → interfaces compartidas.
-4. `backend/src/db.ts` → estructura de las 3 tablas.
-5. `backend/src/seed.ts` → datos de prueba.
-6. `backend/src/server.ts` → punto de entrada.
-7. `backend/src/routes/vehiculos.ts` → endpoint de consulta.
-8. `backend/src/routes/pagos.ts` → endpoint de pago con transacción.
+### Frontend
 
-### Frontend (2º)
+```bash
+cd frontend
+npm install
+npm run dev            # http://localhost:5173
+```
 
-9. `frontend/package.json`, `tsconfig.json`, `vite.config.ts`.
-10. `frontend/tailwind.config.js` → paleta de colores personalizada.
-11. `frontend/index.html` → bare-bones, solo el div `root`.
-12. `frontend/src/main.tsx` → arranque de React con BrowserRouter.
-13. `frontend/src/App.tsx` → definición de rutas.
-14. `frontend/src/types.ts` → tipos espejo del backend.
-15. `frontend/src/api/client.ts` → capa de comunicación con la API.
-16. `frontend/src/utils/format.ts` → helpers de formato.
-17. `frontend/src/hooks/useVehiculo.ts` → custom hook (encapsulación).
-18. `frontend/src/components/*.tsx` → componentes individuales.
-19. `frontend/src/pages/Home.tsx` → página simple.
-20. `frontend/src/pages/VehicleDetail.tsx` → la más completa.
-
+En desarrollo el proxy de Vite redirige `/api/*` → `http://localhost:3001`. No se requiere configurar `VITE_API_URL`.
 
 ---
 
-## 🔮 Hacia dónde puede crecer
+## Variables de entorno
 
-- **Login admin**: agregar autenticación con JWT y un panel restringido.
-- **Carga masiva CSV**: endpoint admin que permita cargar vehículos en masa.
-- **Generación de PDF**: comprobantes descargables.
-- **Búsqueda y filtros**: listar todos los vehículos, filtrar por estado.
-- **Dashboard**: estadísticas y gráficas de recaudo.
-- **Otros servicios**: si decides volver a la idea original, agregar agua, luz, gas.
-- **Migración a PostgreSQL**: cuando estés cómodo, vale la pena.
+### Backend — `backend/.env`
+
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `JWT_SECRET` | Sí | Clave de firma JWT. Mínimo 32 caracteres. |
+| `PORT` | No | Puerto del servidor. Default: `3001`. |
+
+### Frontend — variables de build
+
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `VITE_API_URL` | Solo en producción | URL base del backend. Ej: `https://impuestos-vehiculos.onrender.com`. En desarrollo se omite. |
 
 ---
 
-## 💡 Notas finales
+## API Endpoints
 
-Este proyecto está pensado como **base sólida** sobre la cual seguir creciendo.
+### Públicos
 
-- Cada archivo está comentado en español para que sirva como material de estudio.
-- La separación en `routes/`, `components/`, `hooks/`, `api/`, `utils/` es la convención de proyectos reales.
-- TypeScript está usado de forma estricta para que aprendas a leer y escribir tipos.
-- Las decisiones de diseño favorecen la legibilidad sobre la elegancia. Cuando quieras optimizar después, ya tendrás contexto para hacerlo bien.
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/health` | Healthcheck |
+| `GET` | `/api/vehiculos/:placa` | Vehículo + vigencias + resumen de deuda |
+| `POST` | `/api/pagos` | Registra pago de una o varias vigencias |
+| `GET` | `/api/pagos/:referencia` | Consulta pago por referencia |
+| `POST` | `/api/auth/login` | Autenticación admin. Devuelve `{ token }`. |
+
+### Admin — requieren `Authorization: Bearer <token>`
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/admin/me` | Verifica sesión activa |
+| `GET` | `/api/admin/stats` | Contadores globales del panel |
+| `GET` | `/api/admin/vehiculos` | Lista paginada con filtros: `marca`, `clase`, `modelo`, `tipo_servicio`, `estado_pago`, `pagina` |
+| `GET` | `/api/admin/vehiculos/:placa` | Detalle: datos + vigencias + historial de pagos |
+| `POST` | `/api/admin/csv/vehiculos` | Carga masiva `multipart/form-data` (campo `archivo`) |
+| `GET` | `/api/admin/vigencias/anio-siguiente` | Próximo año disponible para generar vigencias |
+| `POST` | `/api/admin/vigencias/generar-anual` | Genera vigencias anuales para todos los vehículos |
+
+---
+
+## Scripts
+
+### Backend
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Servidor en modo watch (tsx) |
+| `npm run build` | Compila TypeScript a `dist/` |
+| `npm start` | Corre el build compilado |
+| `npm run seed` | Inserta datos de prueba |
+
+### Frontend
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Servidor de desarrollo Vite |
+| `npm run build` | Build de producción en `dist/` |
+| `npm run preview` | Preview del build |
