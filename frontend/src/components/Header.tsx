@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { HelpCircle, ShieldCheck, LogOut } from 'lucide-react';
-import { estaAutenticado, borrarToken } from '../auth/session';
+import { HelpCircle, ShieldCheck, LogOut, User } from 'lucide-react';
+import { estaAutenticado, borrarToken, estaAutenticadoCiudadano } from '../auth/session';
 
 export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [autenticado, setAutenticado] = useState(estaAutenticado);
+  const [autenticado, setAutenticado]               = useState(estaAutenticado);
+  const [autenticadoCiudadano, setAutenticadoCiudadano] = useState(estaAutenticadoCiudadano);
 
   // useLocation() cambia en cada navegación; re-sincroniza el estado de sesión
   // para que el header refleje login/logout sin necesidad de contexto global.
   useEffect(() => {
     setAutenticado(estaAutenticado());
+    setAutenticadoCiudadano(estaAutenticadoCiudadano());
   }, [location]);
 
   function cerrarSesion() {
@@ -41,6 +43,18 @@ export default function Header() {
           </Link>
 
           <nav className="flex items-center gap-1 text-sm">
+            {/* Enlace discreto al portal ciudadano, separado visualmente del área de admin */}
+            <Link
+              to={autenticadoCiudadano ? '/ciudadano/portal' : '/ciudadano/login'}
+              className="px-3 py-2 rounded-lg flex items-center gap-1.5
+                         text-navy-300 hover:bg-navy-800 hover:text-navy-100 transition-colors text-xs"
+            >
+              <User size={14} />
+              <span className="hidden sm:inline">Portal ciudadano</span>
+            </Link>
+
+            <div className="w-px h-4 bg-navy-700 mx-1" />
+
             <button
               className="px-3 py-2 rounded-lg flex items-center gap-1.5
                          text-navy-100 hover:bg-navy-800 transition-colors"

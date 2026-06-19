@@ -56,6 +56,32 @@ db.exec(`
     usuario TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS ciudadanos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    documento TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    foto_documento_path TEXT,
+    creado_en TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS solicitudes_traspaso (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    placa TEXT NOT NULL,
+    ciudadano_id INTEGER NOT NULL,
+    foto_tarjeta_path TEXT NOT NULL,
+    estado TEXT NOT NULL DEFAULT 'pendiente'
+      CHECK(estado IN ('pendiente', 'aprobado', 'rechazado')),
+    resultado_ia TEXT,
+    validacion_db INTEGER NOT NULL DEFAULT 0,
+    fecha_solicitud TEXT NOT NULL,
+    fecha_resolucion TEXT,
+    admin_notas TEXT,
+    FOREIGN KEY (placa) REFERENCES vehiculos(placa),
+    FOREIGN KEY (ciudadano_id) REFERENCES ciudadanos(id)
+  );
 `);
 
 export default db;

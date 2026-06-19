@@ -117,6 +117,80 @@ export interface FiltrosAdmin {
   estado_pago: string;
 }
 
+// ─── Tipos del portal ciudadano ──────────────────────────────────────────────
+
+export interface InfoCiudadano {
+  id: number;
+  nombre: string;
+  email: string;
+}
+
+export interface LoginCiudadanoResponse {
+  token: string;
+  ciudadano: InfoCiudadano;
+}
+
+export type EstadoSolicitud = 'pendiente' | 'aprobado' | 'rechazado';
+
+export interface ResultadoIA {
+  es_tarjeta_propiedad: boolean;
+  placa_extraida: string | null;
+  documento_extraido: string | null;
+  confianza: 'alta' | 'media' | 'baja';
+  observaciones: string;
+}
+
+// Respuesta de POST /api/traspasos (201)
+export interface SolicitudTraspasoResponse {
+  id: number;
+  estado: 'pendiente';
+  validacion_ia: {
+    es_tarjeta_propiedad: boolean;
+    placa_extraida: string | null;
+    confianza: string;
+    observaciones: string;
+  };
+  validacion_db: boolean;
+  mensaje: string;
+}
+
+// Solicitud enriquecida con datos del ciudadano y el vehículo (vista admin).
+// resultado_ia ya viene parseado desde el service del backend.
+export interface SolicitudTraspasoAdmin {
+  id: number;
+  placa: string;
+  ciudadano_id: number;
+  foto_tarjeta_path: string;
+  estado: EstadoSolicitud;
+  resultado_ia: ResultadoIA | null;
+  validacion_db: number;
+  fecha_solicitud: string;
+  fecha_resolucion: string | null;
+  admin_notas: string | null;
+  ciudadano_nombre: string;
+  ciudadano_email: string;
+  ciudadano_documento: string;
+  vehiculo_marca: string | null;
+  vehiculo_linea: string | null;
+  vehiculo_modelo: number | null;
+  vehiculo_propietario: string | null;
+  vehiculo_documento_propietario: string | null;
+}
+
+// Cada solicitud en GET /api/traspasos/mis-solicitudes
+export interface SolicitudTraspasoHistorial {
+  id: number;
+  placa: string;
+  ciudadano_id: number;
+  foto_tarjeta_path: string;
+  estado: EstadoSolicitud;
+  resultado_ia: ResultadoIA | null;
+  validacion_db: number;
+  fecha_solicitud: string;
+  fecha_resolucion: string | null;
+  admin_notas: string | null;
+}
+
 // Resumen que devuelve POST /api/admin/vigencias/generar-anual
 export interface ResultadoGenerarVigencias {
   anio: number;

@@ -11,3 +11,10 @@ if (!secret) {
 
 export const JWT_SECRET: string = secret;
 export const JWT_EXPIRACION = '8h' as const;
+
+// Opcional a propósito: el servidor debe arrancar aunque falte. El endpoint de
+// traspaso responde 503 si se intenta usar la validación por IA sin esta clave.
+export const ANTHROPIC_API_KEY: string | undefined = process.env.ANTHROPIC_API_KEY;
+
+// Modelo de Claude usado para analizar las tarjetas de propiedad (visión).
+export const MODELO_IA_TRASPASO = 'claude-opus-4-6' as const;

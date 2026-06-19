@@ -3,10 +3,17 @@ import 'dotenv/config';
 
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import vehiculosRouter from './routes/vehiculos.js';
 import pagosRouter from './routes/pagos.js';
 import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
+import ciudadanosRouter from './routes/ciudadanos.js';
+import traspasosRouter from './routes/traspasos.js';
 import db from './db.js';
 import { runSeed } from './seed.js';
 
@@ -15,6 +22,10 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Archivos estáticos antes de los routers: evita que alguna ruta /uploads/:param
+// sea capturada por un router antes de que Express sirva el archivo real.
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
   console.log(`[${new Date().toLocaleTimeString('es-CO')}] ${req.method} ${req.path}`);
@@ -29,6 +40,8 @@ app.use('/api/vehiculos', vehiculosRouter);
 app.use('/api/pagos', pagosRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/ciudadanos', ciudadanosRouter);
+app.use('/api/traspasos', traspasosRouter);
 
 // En producción la BD arranca vacía; el seed corre una sola vez si no hay vehículos.
 const { total } = db.prepare('SELECT COUNT(*) as total FROM vehiculos').get() as { total: number };

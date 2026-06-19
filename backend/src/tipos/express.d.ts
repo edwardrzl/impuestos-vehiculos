@@ -8,7 +8,7 @@
 // Este archivo es reconocido automáticamente por TypeScript porque está dentro
 // de src/, que el tsconfig incluye con "src/**/*".
 
-import type { AdminPayload } from '../types.js';
+import type { AdminPayload, CiudadanoPayload } from '../types.js';
 
 declare global {
   namespace Express {
@@ -16,6 +16,8 @@ declare global {
       // Presente solo si el authMiddleware verificó el JWT correctamente.
       // Es undefined en rutas públicas (sin middleware de auth).
       adminAutenticado?: AdminPayload;
+      // Presente solo si el ciudadanoAuthMiddleware verificó el JWT con rol 'ciudadano'.
+      ciudadanoAutenticado?: CiudadanoPayload;
     }
   }
 }

@@ -53,6 +53,21 @@ export function insertarVehiculosEnLote(
   return { insertados, omitidos, insertadasPorIndice };
 }
 
+const actualizarPropietarioStmt = db.prepare(`
+  UPDATE vehiculos
+  SET propietario = @propietario, documento_propietario = @documento_propietario
+  WHERE placa = @placa
+`);
+
+export function actualizarPropietario(datos: {
+  placa: string;
+  propietario: string;
+  documento_propietario: string;
+}): number {
+  const resultado = actualizarPropietarioStmt.run(datos);
+  return resultado.changes as number;
+}
+
 // WHERE IN con placeholders dinámicos: no se puede preparar a nivel de módulo.
 export function buscarVigenciasPorIds(
   ids: number[],

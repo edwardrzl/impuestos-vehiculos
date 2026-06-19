@@ -13,8 +13,13 @@ import type {
   FiltrosAdmin,
   ResultadoCargaCSV,
   ResultadoGenerarVigencias,
+  InfoCiudadano,
+  LoginCiudadanoResponse,
+  SolicitudTraspasoResponse,
+  SolicitudTraspasoHistorial,
+  SolicitudTraspasoAdmin,
 } from '../types';
-import { leerToken } from '../auth/session';
+import { leerToken, obtenerTokenCiudadano } from '../auth/session';
 
 async function request<T>(
   url: string,
@@ -117,6 +122,113 @@ export function generarVigenciasAnuales(params: {
     method: 'POST',
     body: JSON.stringify(params),
   });
+}
+
+// ─── API ciudadano ────────────────────────────────────────────────────────────
+
+// Variante de request() que adjunta el token del ciudadano en vez del del admin.
+async function requestCiudadano<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const token = obtenerTokenCiudadano();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  const response = await fetch(`${BASE_URL}${url}`, { ...options, headers });
+  if (!response.ok) {
+    let mensaje = 'Error en la petición';
+    try {
+      const data = (await response.json()) as ApiError;
+      mensaje = data.message ?? data.error ?? mensaje;
+    } catch {
+      mensaje = response.statusText || mensaje;
+    }
+    throw new Error(mensaje);
+  }
+  return response.json() as Promise<T>;
+}
+
+// No usa request(): fetch no debe fijar Content-Type con multipart/form-data.
+export async function registrarCiudadano(datos: FormData): Promise<InfoCiudadano> {
+  const response = await fetch(`${BASE_URL}/api/ciudadanos/registro`, {
+    method: 'POST',
+    body: datos,
+  });
+  if (!response.ok) {
+    let mensaje = 'Error en el registro';
+    try {
+      const data = (await response.json()) as ApiError;
+      mensaje = data.message ?? data.error ?? mensaje;
+    } catch { /* sin body */ }
+    throw new Error(mensaje);
+  }
+  return response.json() as Promise<InfoCiudadano>;
+}
+
+export function loginCiudadano(email: string, password: string): Promise<LoginCiudadanoResponse> {
+  return requestCiudadano<LoginCiudadanoResponse>('/api/ciudadanos/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+// No usa requestCiudadano(): con multipart/form-data el navegador debe fijar
+// Content-Type con su boundary. Adjunta manualmente el token del ciudadano.
+export async function crearSolicitudTraspaso(datos: FormData): Promise<SolicitudTraspasoResponse> {
+  const token = obtenerTokenCiudadano();
+  const response = await fetch(`${BASE_URL}/api/traspasos`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: datos,
+  });
+  if (!response.ok) {
+    let mensaje = 'Error al enviar la solicitud';
+    try {
+      const data = (await response.json()) as ApiError;
+      mensaje = data.message ?? data.error ?? mensaje;
+    } catch { /* sin body */ }
+    // Propaga el status para distinguir 400 / 502 / 503 en la página.
+    throw Object.assign(new Error(mensaje), { status: response.status });
+  }
+  return response.json() as Promise<SolicitudTraspasoResponse>;
+}
+
+export function listarMisSolicitudes(): Promise<SolicitudTraspasoHistorial[]> {
+  return requestCiudadano<SolicitudTraspasoHistorial[]>('/api/traspasos/mis-solicitudes');
+}
+
+// ─── API admin — traspasos ────────────────────────────────────────────────────
+
+export function listarSolicitudesTraspaso(
+  estado?: 'pendiente' | 'aprobado' | 'rechazado'
+): Promise<SolicitudTraspasoAdmin[]> {
+  const url = estado
+    ? `/api/admin/solicitudes-traspaso?estado=${estado}`
+    : '/api/admin/solicitudes-traspaso';
+  return request<SolicitudTraspasoAdmin[]>(url);
+}
+
+// No usa request(): necesitamos propagar el status HTTP para distinguir 409 en el modal.
+export async function resolverSolicitudAdmin(
+  id: number,
+  datos: { estado: 'aprobado' | 'rechazado'; admin_notas?: string }
+): Promise<void> {
+  const token = leerToken();
+  const response = await fetch(`${BASE_URL}/api/admin/solicitudes-traspaso/${id}/resolver`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(datos),
+  });
+  if (!response.ok) {
+    let mensaje = 'Error al resolver la solicitud';
+    try {
+      const data = (await response.json()) as ApiError;
+      mensaje = data.message ?? data.error ?? mensaje;
+    } catch { /* sin body */ }
+    throw Object.assign(new Error(mensaje), { status: response.status });
+  }
 }
 
 // No usa request(): fetch no debe fijar Content-Type con multipart/form-data

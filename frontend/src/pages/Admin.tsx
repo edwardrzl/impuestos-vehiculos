@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, List, Upload, CalendarPlus } from 'lucide-react';
+import { ShieldCheck, List, Upload, CalendarPlus, ClipboardList, AlertCircle } from 'lucide-react';
 import {
   obtenerStatsAdmin,
   listarVehiculosAdmin,
   obtenerDetalleVehiculoAdmin,
+  listarSolicitudesTraspaso,
 } from '../api/client';
 import { useDebounce } from '../hooks/useDebounce';
 import StatsCards from '../components/admin/StatsCards';
@@ -13,6 +14,7 @@ import TablaVehiculos from '../components/admin/TablaVehiculos';
 import DetalleVehiculo from '../components/admin/DetalleVehiculo';
 import CargaCSV from '../components/admin/CargaCSV';
 import CrearVigencias from '../components/admin/CrearVigencias';
+import SolicitudesTraspaso from '../components/admin/SolicitudesTraspaso';
 import type {
   StatsAdmin,
   ListaVehiculosAdmin,
@@ -49,7 +51,7 @@ const FILTROS_INICIAL: FiltrosAdmin = {
   estado_pago: '',
 };
 
-type Pestana = 'vehiculos' | 'carga_csv' | 'crear_vigencias';
+type Pestana = 'vehiculos' | 'carga_csv' | 'crear_vigencias' | 'solicitudes_traspaso';
 
 export default function Admin() {
   const [pestana,         setPestana]         = useState<Pestana>('vehiculos');
@@ -64,11 +66,23 @@ export default function Admin() {
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [refrescarKey,    setRefrescarKey]    = useState(0);
 
+  // Contador de traspasos pendientes: se carga por separado de /stats porque
+  // viene de un endpoint distinto (solicitudes-traspaso) y debe estar visible
+  // incluso cuando la pestaña de solicitudes no está activa.
+  const [pendientesTraspaso, setPendientesTraspaso] = useState<number | null>(null);
+
   // Debounce de 350 ms: evita un fetch por cada tecla en los inputs de filtro.
   const filtrosDebounced = useDebounce(filtros, 350);
 
   // Detecta si cambiaron los filtros (vs. solo la página) para resetear a página 1.
   const filtrosPrevRef = useRef(filtrosDebounced);
+
+  // Carga el contador de traspasos pendientes al montar la página.
+  useEffect(() => {
+    listarSolicitudesTraspaso('pendiente')
+      .then((lista) => setPendientesTraspaso(lista.length))
+      .catch(() => { /* silencioso */ });
+  }, []);
 
   useEffect(() => {
     if (pestana !== 'vehiculos') return;
@@ -150,11 +164,40 @@ export default function Admin() {
           >
             Crear Vigencias
           </TabButton>
+          <TabButton
+            activa={pestana === 'solicitudes_traspaso'}
+            onClick={() => setPestana('solicitudes_traspaso')}
+            icono={<ClipboardList size={15} />}
+            badge={pendientesTraspaso ?? undefined}
+          >
+            Solicitudes
+          </TabButton>
         </div>
 
         {pestana === 'vehiculos' && (
           <>
             {stats && <StatsCards stats={stats} />}
+
+            {/* Aviso de traspasos pendientes: se muestra solo si hay alguno,
+                con enlace directo a la pestaña de solicitudes. */}
+            {pendientesTraspaso != null && pendientesTraspaso > 0 && (
+              <div className="mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg
+                              bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                <AlertCircle size={15} className="shrink-0" />
+                <span>
+                  {pendientesTraspaso} solicitud
+                  {pendientesTraspaso !== 1 ? 'es' : ''} de traspaso pendiente
+                  {pendientesTraspaso !== 1 ? 's' : ''} de revisión.{' '}
+                  <button
+                    onClick={() => setPestana('solicitudes_traspaso')}
+                    className="underline font-medium hover:text-amber-900 transition-colors"
+                  >
+                    Revisar
+                  </button>
+                </span>
+              </div>
+            )}
+
             <FiltrosVehiculos filtros={filtros} onChange={actualizarFiltro} />
             <SelectorColumnas columnas={columnas} onToggle={toggleColumna} />
             <TablaVehiculos
@@ -178,6 +221,12 @@ export default function Admin() {
         {pestana === 'crear_vigencias' && (
           <CrearVigencias />
         )}
+
+        {pestana === 'solicitudes_traspaso' && (
+          <SolicitudesTraspaso
+            onPendientesChange={(n) => setPendientesTraspaso(n)}
+          />
+        )}
       </div>
 
       {placaDetalle && (
@@ -196,11 +245,13 @@ function TabButton({
   onClick,
   icono,
   children,
+  badge,
 }: {
   activa: boolean;
   onClick: () => void;
   icono: React.ReactNode;
   children: React.ReactNode;
+  badge?: number;
 }) {
   return (
     <button
@@ -214,6 +265,12 @@ function TabButton({
     >
       {icono}
       {children}
+      {badge != null && badge > 0 && (
+        <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-amber-500 text-white
+                         text-[11px] font-bold leading-none">
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
