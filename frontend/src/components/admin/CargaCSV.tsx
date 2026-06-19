@@ -1,14 +1,10 @@
-// components/admin/CargaCSV.tsx
-// Sección de carga masiva de vehículos desde un archivo CSV.
-// Muestra un input de archivo, un botón para enviar, y el resumen del resultado.
-
 import { useState, useRef } from 'react';
 import { Upload, Loader2, CheckCircle2, AlertCircle, SkipForward, TriangleAlert } from 'lucide-react';
 import { cargarCSVVehiculos } from '../../api/client';
 import type { ResultadoCargaCSV } from '../../types';
 
 interface Props {
-  onCargaExitosa: () => void; // llamado cuando insertados > 0; refresca la tabla de vehículos
+  onCargaExitosa: () => void; // llamado cuando insertados > 0; refresca la tabla y vuelve a Vehículos
 }
 
 export default function CargaCSV({ onCargaExitosa }: Props) {
@@ -62,7 +58,6 @@ export default function CargaCSV({ onCargaExitosa }: Props) {
         </p>
       </div>
 
-      {/* Selector de archivo */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
         <label className="flex-1">
           <div
@@ -103,7 +98,6 @@ export default function CargaCSV({ onCargaExitosa }: Props) {
         </button>
       </div>
 
-      {/* Error de red o de servidor */}
       {error && (
         <div className="flex items-start gap-2.5 text-sm text-coral-700
                         bg-coral-50 border border-coral-200 rounded-xl px-4 py-3">
@@ -112,10 +106,8 @@ export default function CargaCSV({ onCargaExitosa }: Props) {
         </div>
       )}
 
-      {/* Resumen del resultado */}
       {resultado && (
         <div className="space-y-4">
-          {/* Contadores principales */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200
                             rounded-xl px-4 py-3">
@@ -144,7 +136,6 @@ export default function CargaCSV({ onCargaExitosa }: Props) {
             </div>
           </div>
 
-          {/* Descripción textual */}
           <div className="text-sm text-stone-600 space-y-1">
             {resultado.insertados > 0 && (
               <p>✅ {resultado.insertados} vehículo{resultado.insertados !== 1 ? 's' : ''} cargado{resultado.insertados !== 1 ? 's' : ''} correctamente.</p>
@@ -154,7 +145,6 @@ export default function CargaCSV({ onCargaExitosa }: Props) {
             )}
           </div>
 
-          {/* Advertencias (clases no reconocidas) */}
           {resultado.advertencias.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 space-y-1">
               <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -169,7 +159,6 @@ export default function CargaCSV({ onCargaExitosa }: Props) {
             </div>
           )}
 
-          {/* Errores por fila */}
           {resultado.errores.length > 0 && (
             <div className="bg-coral-50 border border-coral-200 rounded-xl px-4 py-3 space-y-2">
               <p className="text-xs font-semibold text-coral-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -186,7 +175,6 @@ export default function CargaCSV({ onCargaExitosa }: Props) {
             </div>
           )}
 
-          {/* Acciones post-carga */}
           <div className="flex gap-3 pt-2">
             {resultado.insertados > 0 && (
               <button

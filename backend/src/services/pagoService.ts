@@ -1,23 +1,14 @@
-// services/pagoService.ts
-// Lógica de negocio de pagos. NO conoce req/res.
-// Aquí viven: las validaciones, la verificación de las vigencias, el cálculo del
-// total, la generación de la referencia y el armado del comprobante. Cuando algo
-// no cuadra, lanza un error de negocio que el controller traduce a 400/404.
-
 import * as vehiculoRepository from '../repositories/vehiculoRepository.js';
 import * as pagoRepository from '../repositories/pagoRepository.js';
 import { RecursoNoEncontrado, DatosInvalidos } from '../errors.js';
 import type { ComprobantePago } from '../types.js';
 
-// Datos que llegan en el body del POST /api/pagos. Vienen "en crudo" (el cliente
-// pudo mandar cualquier cosa), por eso este service los valida antes de usarlos.
 export interface DatosPago {
   placa: string;
   vigencias_ids: number[];
   metodo_pago: string;
 }
 
-// Forma de la respuesta del GET /api/pagos/:referencia (un comprobante consultado).
 export interface ComprobanteConsultado {
   id: number;
   referencia: string;
@@ -29,15 +20,9 @@ export interface ComprobanteConsultado {
   fecha_pago: string;
 }
 
-/**
- * Procesa el pago de una o varias vigencias y devuelve el comprobante.
- * El orden de los pasos importa: primero valida la forma de los datos, luego que
- * el vehículo y las vigencias existan, y por último que no estén ya pagadas.
- */
 export function procesarPago(datos: DatosPago): ComprobantePago {
   const { placa, vigencias_ids, metodo_pago } = datos;
 
-  // === VALIDACIONES BÁSICAS DE FORMA ===
   if (!placa || !vigencias_ids || !Array.isArray(vigencias_ids) || vigencias_ids.length === 0) {
     throw new DatosInvalidos('Datos inválidos', 'Se requiere placa y al menos una vigencia');
   }
@@ -48,13 +33,11 @@ export function procesarPago(datos: DatosPago): ComprobantePago {
 
   const placaNormalizada = placa.toUpperCase();
 
-  // === EL VEHÍCULO DEBE EXISTIR ===
   const vehiculo = vehiculoRepository.buscarPorPlaca(placaNormalizada);
   if (!vehiculo) {
     throw new RecursoNoEncontrado('Vehículo no encontrado');
   }
 
-  // === LAS VIGENCIAS DEBEN EXISTIR Y SER DE ESTE VEHÍCULO ===
   const vigencias = vehiculoRepository.buscarVigenciasPorIds(vigencias_ids, placaNormalizada);
 
   // Si volvieron menos filas de las que se pidieron, alguna no existe o es de otro vehículo.
@@ -62,7 +45,6 @@ export function procesarPago(datos: DatosPago): ComprobantePago {
     throw new DatosInvalidos('Algunas vigencias no existen o no pertenecen a este vehículo');
   }
 
-  // === NINGUNA PUEDE ESTAR YA PAGADA ===
   const yaPagadas = vigencias.filter((v) => v.estado === 'pagado');
   if (yaPagadas.length > 0) {
     throw new DatosInvalidos(
@@ -71,7 +53,6 @@ export function procesarPago(datos: DatosPago): ComprobantePago {
     );
   }
 
-  // === DATOS DEL PAGO ===
   const referencia = `PAG-${Date.now()}-${Math.random()
     .toString(36)
     .substring(2, 7)
@@ -79,7 +60,6 @@ export function procesarPago(datos: DatosPago): ComprobantePago {
   const montoTotal = vigencias.reduce((sum, v) => sum + v.valor - v.descuento, 0);
   const fechaPago = new Date().toISOString();
 
-  // El repositorio inserta el pago y marca las vigencias como pagadas (en una transacción).
   const pagoId = pagoRepository.registrarPago({
     referencia,
     placa: placaNormalizada,
@@ -90,7 +70,6 @@ export function procesarPago(datos: DatosPago): ComprobantePago {
     fechaPago,
   });
 
-  // === COMPROBANTE ===
   return {
     id: pagoId,
     referencia,
@@ -103,11 +82,6 @@ export function procesarPago(datos: DatosPago): ComprobantePago {
   };
 }
 
-/**
- * Consulta un pago por su referencia y arma el comprobante para mostrarlo.
- * Los años pagados se guardan como JSON en la base, así que aquí se parsean
- * de vuelta a un array de números.
- */
 export function consultarPago(referencia: string): ComprobanteConsultado {
   const pago = pagoRepository.buscarPorReferencia(referencia);
   if (!pago) {

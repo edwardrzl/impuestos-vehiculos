@@ -1,6 +1,3 @@
-// components/admin/FiltrosVehiculos.tsx - Barra de filtros del panel de vehículos.
-// Los controles actualizan el estado en el padre; la tabla reacciona automáticamente.
-
 import { Search, X } from 'lucide-react';
 import type { FiltrosAdmin } from '../../types';
 
@@ -22,7 +19,6 @@ export default function FiltrosVehiculos({ filtros, onChange }: Props) {
   return (
     <div className="card p-4 mb-4">
       <div className="flex flex-wrap gap-3 items-end">
-        {/* Placa: búsqueda parcial — cualquier fragmento filtra */}
         <div className="min-w-[160px]">
           <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
             Placa
@@ -44,7 +40,6 @@ export default function FiltrosVehiculos({ filtros, onChange }: Props) {
           </div>
         </div>
 
-        {/* Marca: búsqueda parcial (mín. 2 caracteres) */}
         <div className="flex-1 min-w-[160px]">
           <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
             Marca
@@ -65,7 +60,6 @@ export default function FiltrosVehiculos({ filtros, onChange }: Props) {
           </div>
         </div>
 
-        {/* Clase */}
         <div className="min-w-[140px]">
           <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
             Clase
@@ -84,7 +78,6 @@ export default function FiltrosVehiculos({ filtros, onChange }: Props) {
           </select>
         </div>
 
-        {/* Modelo (año) */}
         <div className="min-w-[110px]">
           <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
             Modelo
@@ -101,7 +94,6 @@ export default function FiltrosVehiculos({ filtros, onChange }: Props) {
           />
         </div>
 
-        {/* Tipo de servicio */}
         <div className="min-w-[140px]">
           <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
             Servicio
@@ -120,7 +112,6 @@ export default function FiltrosVehiculos({ filtros, onChange }: Props) {
           </select>
         </div>
 
-        {/* Estado de pago */}
         <div className="min-w-[150px]">
           <label className="block text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
             Estado de pago
@@ -138,7 +129,6 @@ export default function FiltrosVehiculos({ filtros, onChange }: Props) {
           </select>
         </div>
 
-        {/* Botón limpiar: solo visible cuando hay filtros activos */}
         {hayFiltrosActivos && (
           <button
             onClick={limpiarFiltros}

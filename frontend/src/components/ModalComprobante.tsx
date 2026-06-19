@@ -1,8 +1,3 @@
-// components/ModalComprobante.tsx - Muestra el comprobante de pago.
-// Funciona en dos modos:
-//   - Modal (por defecto): overlay oscuro encima de la página, aparece tras pagar.
-//   - Inline (modoInline=true): card incrustada en la página, para búsqueda por referencia.
-
 import { useEffect } from 'react';
 import { CheckCircle2, FileText, X, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -21,7 +16,6 @@ function generarPDF(comprobante: DatosComprobante) {
   const anchoUtil = 170; // 210 - 2*20
   let y = 28;
 
-  // Título
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
   doc.text('Comprobante de Pago — Prisma Impuestos', margen, y);
@@ -31,7 +25,6 @@ function generarPDF(comprobante: DatosComprobante) {
   doc.setDrawColor(180, 180, 180);
   doc.line(margen, y, margen + anchoUtil, y);
 
-  // Campos
   const campo = (etiqueta: string, valor: string) => {
     y += 9;
     doc.setFont('helvetica', 'bold');
@@ -49,7 +42,6 @@ function generarPDF(comprobante: DatosComprobante) {
   campo('Método de pago:', comprobante.metodo_pago);
   campo('Fecha de pago:', formatDateTime(comprobante.fecha_pago));
 
-  // Pie
   y += 14;
   doc.line(margen, y, margen + anchoUtil, y);
   y += 7;
@@ -62,7 +54,6 @@ function generarPDF(comprobante: DatosComprobante) {
 }
 
 export default function ModalComprobante({ comprobante, onCerrar, modoInline = false }: Props) {
-  // Escape siempre disponible (el modal siempre usa overlay ahora).
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onCerrar();
@@ -73,7 +64,7 @@ export default function ModalComprobante({ comprobante, onCerrar, modoInline = f
 
   const tarjeta = (
     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-slide-up">
-      {/* Cabecera: verde tras pago exitoso, navy al consultar un comprobante existente */}
+      {/* Verde tras pago exitoso; navy al consultar un comprobante ya existente */}
       <div
         className={`relative px-6 pt-8 pb-6 text-center ${
           modoInline
@@ -81,7 +72,6 @@ export default function ModalComprobante({ comprobante, onCerrar, modoInline = f
             : 'bg-gradient-to-br from-emerald-500 to-emerald-600'
         } text-white`}
       >
-        {/* Botón X siempre visible: el modal siempre tiene overlay desde el que cerrarse */}
         <button
           onClick={onCerrar}
           className="absolute top-4 right-4 text-white/80 hover:text-white"
@@ -108,7 +98,6 @@ export default function ModalComprobante({ comprobante, onCerrar, modoInline = f
         </p>
       </div>
 
-      {/* Detalles del comprobante */}
       <div className="p-6 space-y-4">
         <div className="bg-stone-50 rounded-xl px-4 py-3 text-center">
           <p className="text-xs uppercase tracking-wider text-stone-500 mb-1">
@@ -144,7 +133,6 @@ export default function ModalComprobante({ comprobante, onCerrar, modoInline = f
           </div>
         </dl>
 
-        {/* Total destacado */}
         <div className="bg-navy-900 text-white rounded-xl px-5 py-4 text-center">
           <p className="text-xs uppercase tracking-wider text-navy-200 mb-1">Total pagado</p>
           <p className="font-display text-4xl tabular-nums">
@@ -152,7 +140,6 @@ export default function ModalComprobante({ comprobante, onCerrar, modoInline = f
           </p>
         </div>
 
-        {/* Acciones */}
         <div className={`flex gap-3 ${modoInline ? 'flex-row' : 'flex-col'}`}>
           <button
             onClick={() => generarPDF(comprobante)}
@@ -171,7 +158,7 @@ export default function ModalComprobante({ comprobante, onCerrar, modoInline = f
     </div>
   );
 
-  // Siempre renderiza con overlay centrado. modoInline solo controla el estilo de cabecera.
+  // modoInline solo controla el estilo de cabecera; siempre renderiza con overlay.
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4

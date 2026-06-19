@@ -1,8 +1,3 @@
-// components/admin/CrearVigencias.tsx
-// Formulario de generación masiva de vigencias anuales.
-// Envía los parámetros al endpoint POST /api/admin/vigencias/generar-anual
-// y muestra el resumen de resultado (creadas / omitidas / errores).
-
 import { useState, useEffect } from 'react';
 import { CalendarPlus, Loader2, CheckCircle2, SkipForward, AlertCircle, TriangleAlert } from 'lucide-react';
 import { generarVigenciasAnuales, obtenerAnioSiguiente } from '../../api/client';
@@ -12,13 +7,11 @@ import { formatCurrency } from '../../utils/format';
 // Fallback mientras se resuelve el fetch inicial; el endpoint lo reemplaza con el valor real.
 const ANIO_FALLBACK = 2026;
 
-// Genera la fecha de vencimiento por defecto para un año dado (30 de junio).
 function fechaVencimientoPorDefecto(anio: number): string {
   return `${anio}-06-30`;
 }
 
 export default function CrearVigencias() {
-  // anioMinimo se inicializa con el fallback y se actualiza al montar con el valor de la BD.
   const [anioMinimo,        setAnioMinimo]        = useState(ANIO_FALLBACK);
   const [cargandoAnio,      setCargandoAnio]      = useState(true);
   const [anio,              setAnio]              = useState(ANIO_FALLBACK);
@@ -29,8 +22,8 @@ export default function CrearVigencias() {
   const [resultado,         setResultado]         = useState<ResultadoGenerarVigencias | null>(null);
   const [error,             setError]             = useState<string | null>(null);
 
-  // Reemplaza la constante estática ANIO_FALLBACK: al montar consulta el año siguiente
-  // al último registrado en la BD para que el formulario siempre parta del año correcto.
+  // Al montar, consulta el año siguiente al último registrado en BD para que el formulario
+  // arranque en el valor correcto en lugar del ANIO_FALLBACK estático.
   useEffect(() => {
     obtenerAnioSiguiente()
       .then(({ anio_siguiente }) => {
@@ -38,12 +31,11 @@ export default function CrearVigencias() {
         setAnio(anio_siguiente);
         setFechaVencimiento(fechaVencimientoPorDefecto(anio_siguiente));
       })
-      .catch(() => { /* mantiene el fallback 2027 si el endpoint falla */ })
+      .catch(() => { /* mantiene el fallback si el endpoint falla */ })
       .finally(() => setCargandoAnio(false));
   }, []);
 
-  // Cuando el admin cambia el año manualmente, sincronizamos la fecha al 30/06
-  // del nuevo año como sugerencia. El admin puede luego modificarla.
+  // Cuando el admin cambia el año, sincroniza la fecha al 30/06 como sugerencia.
   useEffect(() => {
     setFechaVencimiento(fechaVencimientoPorDefecto(anio));
   }, [anio]);
@@ -69,13 +61,11 @@ export default function CrearVigencias() {
     }
   }
 
-  // Calcula un ejemplo del valor para el preview usando un avalúo ficticio de referencia.
-  // El avalúo real varía por vehículo; esto solo es ilustrativo para el admin.
-  const ejemploAvaluo   = 20_000_000;
-  const ejemploValor    = Math.round((ejemploAvaluo * tasaPct) / 100);
+  // Avalúo de referencia ilustrativo para el preview (el real varía por vehículo).
+  const ejemploAvaluo    = 20_000_000;
+  const ejemploValor     = Math.round((ejemploAvaluo * tasaPct) / 100);
   const ejemploDescuento = Math.round((ejemploValor * descuentoPct) / 100);
 
-  // Formatea la fecha de vencimiento como DD/MM/YYYY para mostrar en el preview.
   const fechaDisplay = (() => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaVencimiento)) return fechaVencimiento;
     const [y, m, d] = fechaVencimiento.split('-');
@@ -94,7 +84,6 @@ export default function CrearVigencias() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          {/* Fila: Año + Tasa */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-navy-800 mb-1.5 flex items-center gap-2">
@@ -132,7 +121,6 @@ export default function CrearVigencias() {
             </div>
           </div>
 
-          {/* Fila: Descuento + Fecha vencimiento */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-navy-800 mb-1.5">
@@ -166,7 +154,6 @@ export default function CrearVigencias() {
             </div>
           </div>
 
-          {/* Preview reactivo — se actualiza con cada cambio en el formulario */}
           <div className="bg-navy-50 border border-navy-200 rounded-xl px-5 py-4 space-y-1.5">
             <p className="text-xs font-semibold text-navy-700 uppercase tracking-wider flex items-center gap-1.5">
               <CalendarPlus size={13} />
@@ -209,7 +196,6 @@ export default function CrearVigencias() {
         </form>
       </div>
 
-      {/* Error de validación o de red */}
       {error && (
         <div className="flex items-start gap-2.5 text-sm text-coral-700
                         bg-coral-50 border border-coral-200 rounded-xl px-4 py-3">
@@ -218,7 +204,6 @@ export default function CrearVigencias() {
         </div>
       )}
 
-      {/* Tarjeta de resultado */}
       {resultado && (
         <div className="card p-6 space-y-4">
           <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
@@ -226,7 +211,6 @@ export default function CrearVigencias() {
           </p>
 
           <div className="grid grid-cols-3 gap-3">
-            {/* Creadas */}
             <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border
                             ${resultado.creadas > 0
                               ? 'bg-emerald-50 border-emerald-200'
@@ -248,7 +232,6 @@ export default function CrearVigencias() {
               </div>
             </div>
 
-            {/* Omitidas */}
             <div className="flex items-center gap-3 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
               <SkipForward size={20} className="text-stone-500 shrink-0" />
               <div>
@@ -257,7 +240,6 @@ export default function CrearVigencias() {
               </div>
             </div>
 
-            {/* Errores */}
             <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border
                             ${resultado.errores > 0
                               ? 'bg-coral-50 border-coral-200'
@@ -280,7 +262,6 @@ export default function CrearVigencias() {
             </div>
           </div>
 
-          {/* Mensaje resumido */}
           <div className="text-sm text-stone-600 space-y-1">
             <p>Total de vehículos procesados: <strong>{resultado.total_vehiculos}</strong></p>
             {resultado.creadas === 0 && resultado.omitidas > 0 && (

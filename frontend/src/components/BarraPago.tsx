@@ -1,6 +1,3 @@
-// components/BarraPago.tsx - Barra fija inferior que aparece cuando
-// hay vigencias seleccionadas. Muestra el resumen y el botón para pagar.
-
 import { Loader2 } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
 
@@ -24,7 +21,6 @@ export default function BarraPago({
     >
       <div className="max-w-6xl mx-auto px-6 lg:px-8 py-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Cantidad de vigencias seleccionadas */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-coral-500 rounded-lg flex items-center justify-center font-semibold">
               {cantidad}
@@ -36,11 +32,9 @@ export default function BarraPago({
               <div className="text-sm text-navy-100">
                 Listo para procesar el pago
               </div>
-              
             </div>
           </div>
 
-          {/* Total a pagar */}
           <div className="text-center">
             <div className="text-xs uppercase tracking-wider text-navy-200">
               Total a pagar
@@ -50,7 +44,6 @@ export default function BarraPago({
             </div>
           </div>
 
-          {/* Botón de pago */}
           <button
             onClick={onPagar}
             disabled={procesando}

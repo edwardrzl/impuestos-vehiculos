@@ -1,7 +1,3 @@
-// pages/Home.tsx - Pantalla inicial con el buscador por placa.
-// Al confirmar la búsqueda, navega a /vehiculo/:placa.
-// También incluye una sección secundaria para consultar comprobantes por referencia.
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Car, ArrowRight, Receipt, Search, Loader2, AlertCircle } from 'lucide-react';
@@ -15,7 +11,6 @@ const PLACAS_PRUEBA = ['SLY29E', 'ABC123', 'XYZ789', 'MOT001', 'WXY456'];
 export default function Home() {
   const navigate = useNavigate();
 
-  // ── Buscador por referencia ──────────────────────────────────────────────
   const [referencia,    setReferencia]    = useState('');
   const [buscando,      setBuscando]      = useState(false);
   const [comprobante,   setComprobante]   = useState<DatosComprobante | null>(null);
@@ -54,7 +49,6 @@ export default function Home() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-paper flex items-center">
       <div className="w-full max-w-3xl mx-auto px-6 py-12 lg:py-20">
-        {/* Encabezado */}
         <div className="mb-10 lg:mb-14">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-coral-50 text-coral-700 rounded-full text-xs font-semibold uppercase tracking-wider mb-5">
             <Car size={14} />
@@ -72,11 +66,9 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Buscador principal por placa */}
         <div className="card p-6 md:p-8">
           <BuscadorPlaca onBuscar={manejarBusqueda} />
 
-          {/* Placas de prueba: útiles durante desarrollo */}
           <div className="mt-8 pt-6 border-t border-stone-200">
             <p className="text-xs uppercase tracking-wider text-stone-500 font-semibold mb-3">
               Placas de prueba
@@ -103,7 +95,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── Sección secundaria: búsqueda por referencia ────────────────── */}
         <div className="mt-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-px flex-1 bg-stone-200" />
@@ -151,7 +142,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Error de búsqueda */}
             {errorBusqueda && (
               <div className="mt-4 flex items-start gap-2.5 text-sm text-coral-700
                               bg-coral-50 border border-coral-200 rounded-xl px-4 py-3">
@@ -161,7 +151,7 @@ export default function Home() {
             )}
           </div>
 
-          {/* Modal con cabecera navy: se abrió desde búsqueda, no desde un pago */}
+          {/* Cabecera navy: comprobante consultado por referencia, no por pago reciente */}
           {comprobante && (
             <ModalComprobante
               comprobante={comprobante}
@@ -171,7 +161,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Info pie */}
         <p className="text-xs text-stone-500 text-center mt-8 max-w-md mx-auto">
           Este es un proyecto educativo. Las vigencias y datos de vehículos son
           de prueba y no corresponden a información real.

@@ -1,8 +1,3 @@
-// components/Header.tsx - Barra superior común a todas las páginas.
-// Muestra el botón "Admin" si no hay sesión, o "Cerrar sesión" si la hay.
-// Re-evalúa el estado de autenticación cada vez que el usuario navega,
-// gracias a useLocation() que cambia en cada cambio de ruta.
-
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { HelpCircle, ShieldCheck, LogOut } from 'lucide-react';
@@ -12,12 +7,10 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Estado local que refleja si hay sesión activa.
-  // Se inicializa al montar el componente y se actualiza en cada cambio de ruta.
   const [autenticado, setAutenticado] = useState(estaAutenticado);
 
-  // Re-verifica la autenticación cada vez que el usuario navega a otra ruta.
-  // Esto hace que el header se actualice correctamente después del login y el logout.
+  // useLocation() cambia en cada navegación; re-sincroniza el estado de sesión
+  // para que el header refleje login/logout sin necesidad de contexto global.
   useEffect(() => {
     setAutenticado(estaAutenticado());
   }, [location]);
@@ -31,7 +24,6 @@ export default function Header() {
     <header className="bg-navy-900 text-white">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo / marca */}
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center">
               <span className="font-display italic text-navy-900 text-2xl leading-none">
@@ -48,7 +40,6 @@ export default function Header() {
             </div>
           </Link>
 
-          {/* Acciones */}
           <nav className="flex items-center gap-1 text-sm">
             <button
               className="px-3 py-2 rounded-lg flex items-center gap-1.5
@@ -59,7 +50,6 @@ export default function Header() {
             </button>
 
             {autenticado ? (
-              // Con sesión activa: botón para ir al panel + botón de cerrar sesión
               <>
                 <Link
                   to="/admin"
@@ -79,7 +69,6 @@ export default function Header() {
                 </button>
               </>
             ) : (
-              // Sin sesión: botón que lleva al login
               <Link
                 to="/login"
                 className="px-3 py-2 rounded-lg flex items-center gap-1.5

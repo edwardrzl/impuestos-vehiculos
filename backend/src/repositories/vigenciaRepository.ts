@@ -1,16 +1,10 @@
-// repositories/vigenciaRepository.ts
-// SQL exclusivo de operaciones sobre vigencias anuales.
-// No contiene lógica de negocio: solo ejecuta consultas y devuelve datos tipados.
-
 import db from '../db.js';
 
-/** Par mínimo de un vehículo para calcular el valor de su vigencia. */
 export interface VehiculoParaVigencia {
   placa: string;
   avaluo: number;
 }
 
-/** Datos listos para insertar en la tabla vigencias. */
 export interface VigenciaParaInsertar {
   placa: string;
   anio: number;
@@ -19,18 +13,13 @@ export interface VigenciaParaInsertar {
   fecha_vencimiento: string;
 }
 
-/** Devuelve placa y avalúo de todos los vehículos registrados. */
 export function obtenerTodosParaVigencia(): VehiculoParaVigencia[] {
   return db
     .prepare('SELECT placa, avaluo FROM vehiculos')
     .all() as VehiculoParaVigencia[];
 }
 
-/**
- * Devuelve el año siguiente al máximo registrado en vigencias.
- * COALESCE garantiza que si la tabla está vacía devuelva 2026,
- * de modo que el resultado siempre sea al menos 2027.
- */
+// COALESCE garantiza mínimo 2027 cuando la tabla de vigencias está vacía.
 export function obtenerAnioSiguiente(): number {
   const fila = db
     .prepare('SELECT COALESCE(MAX(anio), 2026) + 1 AS anio_siguiente FROM vigencias')
@@ -38,7 +27,6 @@ export function obtenerAnioSiguiente(): number {
   return fila.anio_siguiente;
 }
 
-/** Comprueba si existe al menos una vigencia para el año indicado. */
 export function existeVigenciaParaAnio(anio: number): boolean {
   const fila = db
     .prepare('SELECT 1 FROM vigencias WHERE anio = ? LIMIT 1')
@@ -46,11 +34,6 @@ export function existeVigenciaParaAnio(anio: number): boolean {
   return fila !== undefined;
 }
 
-/**
- * Inserta un lote de vigencias en una sola transacción con INSERT OR IGNORE.
- * Si la combinación (placa, anio) ya existe, la fila se salta sin abortar.
- * Devuelve cuántas filas se crearon realmente y cuántas se omitieron.
- */
 export function insertarVigenciasEnLote(
   vigencias: VigenciaParaInsertar[]
 ): { creadas: number; omitidas: number } {

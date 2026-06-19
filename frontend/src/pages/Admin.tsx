@@ -1,6 +1,3 @@
-// pages/Admin.tsx - Panel funcional de administración de vehículos.
-// Dos pestañas: "Vehículos" (stats + filtros + tabla) y "Cargar CSV".
-
 import { useState, useEffect, useRef } from 'react';
 import { ShieldCheck, List, Upload, CalendarPlus } from 'lucide-react';
 import {
@@ -24,7 +21,6 @@ import type {
 } from '../types';
 import type { Vehiculo } from '../types';
 
-// Definición de columnas exportada para que los sub-componentes la importen.
 export interface ColumnaConfig {
   clave: keyof Vehiculo;
   etiqueta: string;
@@ -66,33 +62,26 @@ export default function Admin() {
   const [columnas,        setColumnas]        = useState<ColumnaConfig[]>(COLUMNAS_INICIAL);
   const [cargandoLista,   setCargandoLista]   = useState(false);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
-  // Incrementar este contador fuerza un refresco de stats y lista (sin cambiar filtros).
   const [refrescarKey,    setRefrescarKey]    = useState(0);
 
-  // Debounce de 350 ms para no disparar una petición por cada tecla.
+  // Debounce de 350 ms: evita un fetch por cada tecla en los inputs de filtro.
   const filtrosDebounced = useDebounce(filtros, 350);
 
-  // Referencia al último valor de filtrosDebounced: detecta si cambiaron los filtros
-  // o solo cambió la página. Si cambiaron los filtros → resetear a página 1.
+  // Detecta si cambiaron los filtros (vs. solo la página) para resetear a página 1.
   const filtrosPrevRef = useRef(filtrosDebounced);
 
-  // ── Cargar stats al montar, cuando se refresca, o cuando se activa la pestaña ─
   useEffect(() => {
     if (pestana !== 'vehiculos') return;
     obtenerStatsAdmin().then(setStats).catch(console.error);
   }, [refrescarKey, pestana]);
 
-  // ── Cargar lista cuando cambian filtros debounced, la página, refrescarKey o pestaña ─
-  // El guard `pestana !== 'vehiculos'` evita fetch innecesarios al cambiar a Cargar CSV,
-  // pero garantiza que al volver a Vehículos se traigan datos frescos.
   useEffect(() => {
     if (pestana !== 'vehiculos') return;
 
     const filtrosCambiaron = filtrosPrevRef.current !== filtrosDebounced;
     filtrosPrevRef.current = filtrosDebounced;
 
-    // Si los filtros cambiaron, pedimos la página 1 directamente (sin esperar
-    // que el estado `pagina` se actualice en otro render) y sincronizamos.
+    // Cuando cambian los filtros, usa página 1 sin esperar el re-render de setPagina.
     const paginaReal = filtrosCambiaron ? 1 : pagina;
     if (filtrosCambiaron && pagina !== 1) setPagina(1);
 
@@ -103,7 +92,6 @@ export default function Admin() {
       .finally(() => setCargandoLista(false));
   }, [filtrosDebounced, pagina, refrescarKey, pestana]);
 
-  // ── Cargar detalle cuando se selecciona una placa ─────────────────────────
   useEffect(() => {
     if (!placaDetalle) { setDetalle(null); return; }
 
@@ -124,8 +112,6 @@ export default function Admin() {
     );
   }
 
-  // Llamado desde CargaCSV al pulsar "Actualizar tabla":
-  // refresca datos y vuelve a la pestaña de vehículos.
   function alCargaExitosa() {
     setRefrescarKey((k) => k + 1);
     setPestana('vehiculos');
@@ -135,7 +121,6 @@ export default function Admin() {
     <div className="min-h-[calc(100vh-4rem)] bg-paper">
       <div className="max-w-7xl mx-auto px-6 py-8">
 
-        {/* Encabezado del panel */}
         <div className="flex items-center gap-3 mb-6">
           <ShieldCheck size={22} className="text-navy-600" />
           <h1 className="font-display text-2xl text-navy-900">
@@ -143,7 +128,6 @@ export default function Admin() {
           </h1>
         </div>
 
-        {/* Barra de pestañas */}
         <div className="flex gap-1 mb-6 border-b border-stone-200">
           <TabButton
             activa={pestana === 'vehiculos'}
@@ -168,7 +152,6 @@ export default function Admin() {
           </TabButton>
         </div>
 
-        {/* ── Pestaña: Vehículos ──────────────────────────────────────────── */}
         {pestana === 'vehiculos' && (
           <>
             {stats && <StatsCards stats={stats} />}
@@ -188,18 +171,15 @@ export default function Admin() {
           </>
         )}
 
-        {/* ── Pestaña: Cargar CSV ─────────────────────────────────────────── */}
         {pestana === 'carga_csv' && (
           <CargaCSV onCargaExitosa={alCargaExitosa} />
         )}
 
-        {/* ── Pestaña: Crear Vigencias ────────────────────────────────────── */}
         {pestana === 'crear_vigencias' && (
           <CrearVigencias />
         )}
       </div>
 
-      {/* Panel lateral de detalle (se monta cuando hay una placa seleccionada) */}
       {placaDetalle && (
         <DetalleVehiculo
           detalle={detalle}
@@ -211,7 +191,6 @@ export default function Admin() {
   );
 }
 
-// Sub-componente privado: botón de pestaña con estilo activo/inactivo.
 function TabButton({
   activa,
   onClick,

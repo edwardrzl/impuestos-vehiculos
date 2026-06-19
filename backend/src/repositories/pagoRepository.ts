@@ -1,16 +1,8 @@
-// repositories/pagoRepository.ts
-// Única capa que habla con SQLite para la tabla de pagos.
-//
-// Aquí también vive la ESCRITURA de vigencias (marcarlas como pagadas), porque
-// ocurre dentro de la misma transacción que inserta el pago: insertar el pago y
-// marcar sus vigencias como pagadas deben pasar juntos o no pasar. better-sqlite3
-// es síncrono, así que la transacción también lo es (sin promesas).
-
+// Escribir vigencias vive aquí (no en vigenciaRepository) porque debe ser
+// atómica con el insert del pago: ambas operaciones van en la misma transacción.
 import db from '../db.js';
 import type { Pago } from '../types.js';
 
-// Datos que el service entrega para registrar un pago. Son valores simples y ya
-// validados; este repositorio solo los persiste.
 export interface NuevoPago {
   referencia: string;
   placa: string;
@@ -21,7 +13,6 @@ export interface NuevoPago {
   fechaPago: string;
 }
 
-// Sentencias preparadas una sola vez.
 const insertarPago = db.prepare(
   `INSERT INTO pagos (referencia, placa, vigencias_pagadas, monto_total, metodo_pago, fecha_pago)
    VALUES (?, ?, ?, ?, ?, ?)`
@@ -33,13 +24,7 @@ const marcarVigenciaPagada = db.prepare(
 
 const buscarPagoPorReferencia = db.prepare('SELECT * FROM pagos WHERE referencia = ?');
 
-/**
- * Registra un pago de forma atómica: inserta la fila en `pagos` y marca todas
- * sus vigencias como 'pagado'. Devuelve el id del pago recién creado.
- *
- * El array de años se guarda como JSON (la columna vigencias_pagadas es TEXT),
- * que es un detalle de almacenamiento y por eso se resuelve aquí.
- */
+// vigencias_pagadas se serializa como JSON porque SQLite no tiene tipo array.
 export function registrarPago(datos: NuevoPago): number {
   const transaccion = db.transaction((p: NuevoPago) => {
     const resultPago = insertarPago.run(
@@ -61,7 +46,6 @@ export function registrarPago(datos: NuevoPago): number {
   return transaccion(datos);
 }
 
-/** Busca un pago por su referencia. Devuelve undefined si no existe. */
 export function buscarPorReferencia(referencia: string): Pago | undefined {
   return buscarPagoPorReferencia.get(referencia) as Pago | undefined;
 }

@@ -1,8 +1,3 @@
-// components/BuscadorPlaca.tsx - Input + botón para buscar por placa.
-// Maneja su propio estado interno (lo que el usuario tipea) y
-// expone una sola prop: onBuscar(placa), que se llama cuando
-// el usuario confirma la búsqueda.
-
 import { useState, type FormEvent } from 'react';
 import { Search } from 'lucide-react';
 
@@ -21,7 +16,7 @@ export default function BuscadorPlaca({ onBuscar, cargando = false }: BuscadorPl
 
     if (limpia.length < 5 || limpia.length > 7) {
       setErrorLocal('La placa debe tener entre 5 y 7 caracteres');
-      return; 
+      return;
     }
 
     setErrorLocal('');

@@ -1,10 +1,4 @@
-// config.ts - Variables de entorno validadas al arrancar el servidor.
-//
-// IMPORTANTE: este módulo se importa DESPUÉS de 'dotenv/config' en server.ts,
-// garantizando que el archivo .env ya fue cargado cuando este código corre.
-// Si JWT_SECRET no está definida, el proceso termina con un mensaje claro:
-// es mejor fallar al arrancar que fallar silenciosamente en la primera petición.
-
+// Falla al arrancar si JWT_SECRET no está definida: mejor error temprano que fallo silencioso.
 const secret = process.env.JWT_SECRET;
 
 if (!secret) {
@@ -15,8 +9,5 @@ if (!secret) {
   );
 }
 
-// Lo exportamos como string (no string | undefined) porque ya validamos arriba.
 export const JWT_SECRET: string = secret;
-
-// Tiempo de vida del token. '8h' significa que expira a las 8 horas de ser firmado.
 export const JWT_EXPIRACION = '8h' as const;

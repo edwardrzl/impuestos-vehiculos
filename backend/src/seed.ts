@@ -6,14 +6,12 @@ export function runSeed(): void {
 
 console.log('🌱 Limpiando datos previos...');
 
-// Orden inverso por las foreign keys: primero borramos los hijos.
 db.exec('DELETE FROM pagos');
 db.exec('DELETE FROM vigencias');
 db.exec('DELETE FROM vehiculos');
 
 console.log('📥 Insertando vehículos...');
 
-// Definimos los vehículos con tipos para que TS nos ayude.
 interface VehiculoSeed {
   placa: string;
   clase: string;
@@ -90,7 +88,6 @@ const vehiculos: VehiculoSeed[] = [
   },
 ];
 
-// Preparar la sentencia UNA vez y reusarla en el loop.
 const insertVehiculo = db.prepare(`
   INSERT INTO vehiculos
     (placa, clase, marca, linea, modelo, tipo_servicio, capacidad, avaluo, propietario, documento_propietario)
@@ -105,40 +102,29 @@ for (const v of vehiculos) {
 
 console.log('📥 Insertando vigencias...');
 
-// Estructura: [placa, año, valor, estado, fecha_pago]
 type VigenciaSeed = [string, number, number, 'pagado' | 'pendiente', string | null];
 
 const vigenciasData: VigenciaSeed[] = [
-  // SLY29E - Moto con deuda 2026
   ['SLY29E', 2020, 297139, 'pagado', '2020-06-10'],
-  ['SLY29E', 2021, 98478, 'pagado', '2021-04-30'],
-  ['SLY29E', 2022, 97106, 'pagado', '2022-05-15'],
+  ['SLY29E', 2021, 98478,  'pagado', '2021-04-30'],
+  ['SLY29E', 2022, 97106,  'pagado', '2022-05-15'],
   ['SLY29E', 2023, 103254, 'pagado', '2023-04-20'],
   ['SLY29E', 2024, 110223, 'pagado', '2024-05-10'],
   ['SLY29E', 2025, 121688, 'pagado', '2025-04-25'],
-  //['SLY29E', 2026, 85000, 'pendiente', null],
 
-  // ABC123 - Al día
   ['ABC123', 2023, 458000, 'pagado', '2023-05-10'],
   ['ABC123', 2024, 487000, 'pagado', '2024-04-15'],
   ['ABC123', 2025, 512000, 'pagado', '2025-05-20'],
-  //['ABC123', 2026, 545000, 'pagado', '2026-04-10'],
 
-  // XYZ789 - Camioneta con varias deudas
-  ['XYZ789', 2023, 2180000, 'pagado', '2023-05-15'],
+  ['XYZ789', 2023, 2180000, 'pagado',   '2023-05-15'],
   ['XYZ789', 2024, 2315000, 'pendiente', null],
   ['XYZ789', 2025, 2456000, 'pendiente', null],
-  //['XYZ789', 2026, 2580000, 'pendiente', null],
 
-  // MOT001 - Solo 2026 pendiente
   ['MOT001', 2024, 145000, 'pagado', '2024-04-30'],
   ['MOT001', 2025, 158000, 'pagado', '2025-05-10'],
-  //['MOT001', 2026, 172000, 'pendiente', null],
 
-  // WXY456 - Renault con 2 pendientes
-  ['WXY456', 2024, 612000, 'pagado', '2024-04-20'],
+  ['WXY456', 2024, 612000, 'pagado',   '2024-04-20'],
   ['WXY456', 2025, 648000, 'pendiente', null],
-  //['WXY456', 2026, 685000, 'pendiente', null],
 ];
 
 const insertVigencia = db.prepare(`
@@ -147,25 +133,17 @@ const insertVigencia = db.prepare(`
 `);
 
 for (const [placa, anio, valor, estado, fecha_pago] of vigenciasData) {
-  // Para vigencias pendientes, ponemos fecha de vencimiento al 30/06 del año.
   const fecha_vencimiento = estado === 'pendiente' ? `${anio}-06-30` : null;
   insertVigencia.run(placa, anio, valor, estado, fecha_pago, fecha_vencimiento);
 }
 
 console.log(`  ✓ ${vigenciasData.length} vigencias insertadas`);
 
-// === ADMINISTRADOR ===
-// Generamos el hash de la contraseña aquí (no lo pegamos a mano) para que el
-// proceso de hashing sea visible y reproducible. Saltear 10 rondas es el
-// estándar: lo suficientemente lento para dificultar ataques de fuerza bruta,
-// pero lo suficientemente rápido para no bloquear el seed.
 console.log('📥 Insertando administrador...');
 
 const passwordHash = bcrypt.hashSync('Admin123*', 10);
 
-// INSERT OR IGNORE: si ya existe un admin con usuario 'admin', no falla ni
-// sobreescribe. Esto hace que el seed sea idempotente (puedes correrlo varias
-// veces sin problema).
+// INSERT OR IGNORE: idempotente si el admin ya existe.
 db.prepare(
   'INSERT OR IGNORE INTO admins (usuario, password_hash) VALUES (?, ?)'
 ).run('admin', passwordHash);

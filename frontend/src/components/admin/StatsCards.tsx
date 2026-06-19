@@ -1,5 +1,3 @@
-// components/admin/StatsCards.tsx - Cuatro tarjetas de resumen en la cabecera del panel.
-
 import { Car, Clock, CheckCircle, DollarSign } from 'lucide-react';
 import { formatCurrency } from '../../utils/format';
 import type { StatsAdmin } from '../../types';

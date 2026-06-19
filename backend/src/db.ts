@@ -1,11 +1,6 @@
-// db.ts - Configuración e inicialización de SQLite.
-// Este archivo se ejecuta automáticamente cuando otro archivo lo importa,
-// gracias a las líneas sueltas (db.pragma, db.exec) que están fuera de funciones.
-
 import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,10 +9,9 @@ const dbPath = join(__dirname, '..', 'prisma.db');
 
 const db = new Database(dbPath);
 
-// Activamos foreign keys (SQLite las tiene desactivadas por defecto)
+// SQLite desactiva FK por defecto.
 db.pragma('foreign_keys = ON');
 
-// Crear las tablas si no existen
 db.exec(`
   CREATE TABLE IF NOT EXISTS vehiculos (
     placa TEXT PRIMARY KEY,

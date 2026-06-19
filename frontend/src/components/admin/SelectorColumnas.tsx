@@ -1,7 +1,3 @@
-// components/admin/SelectorColumnas.tsx
-// Fila de checkboxes que controla qué columnas se muestran en la tabla.
-// La placa NO aparece aquí porque siempre está visible (es el identificador).
-
 import type { ColumnaConfig } from '../../pages/Admin';
 
 interface Props {
@@ -10,7 +6,7 @@ interface Props {
 }
 
 export default function SelectorColumnas({ columnas, onToggle }: Props) {
-  // Excluimos 'placa' porque es siempre visible y no tiene sentido desactivarla.
+  // Excluimos 'placa': es el identificador de fila y siempre debe estar visible.
   const columnasToggleables = columnas.filter((c) => c.clave !== 'placa');
 
   return (

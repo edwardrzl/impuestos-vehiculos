@@ -1,7 +1,3 @@
-// controllers/adminPanelController.ts
-// Lee query params y path params del req, llama al service, arma el res.
-// Es la única capa que toca req/res en el flujo de admin.
-
 import type { Request, Response } from 'express';
 import * as adminPanelService from '../services/adminPanelService.js';
 import { responderConError } from './errorHttp.js';
@@ -10,7 +6,6 @@ import type { FiltrosVehiculos } from '../types.js';
 /** GET /api/admin/vehiculos?marca=&clase=&modelo=&tipo_servicio=&estado_pago=&pagina= */
 export function listarVehiculos(req: Request, res: Response): void {
   try {
-    // Los query params llegan como strings; los convertimos aquí antes de pasar al service.
     const {
       placa,
       marca,
@@ -27,7 +22,6 @@ export function listarVehiculos(req: Request, res: Response): void {
     if (clase) filtros.clase = clase;
     if (modelo) filtros.modelo = Number(modelo);
     if (tipo_servicio) filtros.tipo_servicio = tipo_servicio;
-    // Solo los valores del tipo definido pasan; cualquier otro se ignora.
     if (estado_pago === 'pendiente' || estado_pago === 'al_dia') {
       filtros.estado_pago = estado_pago;
     }

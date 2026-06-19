@@ -1,6 +1,3 @@
-// utils/format.ts - Funciones de presentación reutilizables.
-// Centralizar el formateo evita inconsistencias visuales en la app.
-
 /**
  * Formatea un número como moneda colombiana: 85000 → "$85.000"
  */
@@ -13,9 +10,6 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
-/**
- * Formatea una fecha ISO a formato legible: "15/04/2026"
- */
 export function formatDate(isoString: string | null): string {
   if (!isoString) return '—';
   const date = new Date(isoString);
@@ -26,9 +20,6 @@ export function formatDate(isoString: string | null): string {
   });
 }
 
-/**
- * Formatea fecha y hora completa: "15/04/2026, 10:30 a.m."
- */
 export function formatDateTime(isoString: string | null): string {
   if (!isoString) return '—';
   const date = new Date(isoString);

@@ -1,6 +1,3 @@
-// components/VigenciaRow.tsx - Una fila de la lista de vigencias.
-// Se puede seleccionar (solo si es pendiente) y muestra el año, valor y estado.
-
 import { Check, Lock } from 'lucide-react';
 import type { Vigencia } from '../types';
 import { formatCurrency } from '../utils/format';
@@ -31,12 +28,10 @@ export default function VigenciaRow({ vigencia, seleccionada, onClick }: Vigenci
         }
       `}
     >
-      {/* Año */}
       <span className="font-display text-3xl text-navy-900 w-16">
         {vigencia.anio}
       </span>
 
-      {/* Estado */}
       <span
         className={`flex-1 text-sm font-medium ${
           esPendiente ? 'text-coral-600' : 'text-stone-500'
@@ -48,7 +43,7 @@ export default function VigenciaRow({ vigencia, seleccionada, onClick }: Vigenci
             Pagado en {new Date(vigencia.fecha_pago).toLocaleDateString('es-CO')}
           </span>
         )}
-        {(vigencia.fecha_vencimiento) && 
+        {(vigencia.fecha_vencimiento) &&
         (new Date(vigencia.fecha_vencimiento) > new Date()) &&(
           <>
           <span className="block text-xs text-stone-400 font-normal mt-0.5">
@@ -61,12 +56,10 @@ export default function VigenciaRow({ vigencia, seleccionada, onClick }: Vigenci
         )}
       </span>
 
-      {/* Valor */}
       <span className="font-semibold text-navy-900 w-32 text-right tabular-nums">
         {formatCurrency(vigencia.valor - vigencia.descuento)}
       </span>
 
-      {/* Indicador */}
       <span className="w-7 flex justify-center">
         {seleccionada ? (
           <span className="w-6 h-6 bg-coral-500 rounded-md flex items-center justify-center shadow-sm">

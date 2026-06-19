@@ -1,8 +1,3 @@
-// types.ts - Tipos e interfaces que se usan en todo el backend.
-// Tener estos tipos centralizados evita repetirlos en cada archivo
-// y garantiza consistencia: si cambia la estructura de datos,
-// cambias en un solo lugar.
-
 export interface Vehiculo {
   placa: string;
   clase: string;
@@ -40,7 +35,6 @@ export interface Pago {
   estado: string;
 }
 
-// Tipos para las respuestas de la API (lo que el frontend recibe)
 export interface VehiculoConVigencias {
   vehiculo: Vehiculo;
   vigencias: Vigencia[];
@@ -52,21 +46,17 @@ export interface VehiculoConVigencias {
   };
 }
 
-// Fila de la tabla admins tal como la devuelve SQLite.
 export interface Admin {
   id: number;
   usuario: string;
   password_hash: string;
 }
 
-// Datos del admin que viajan DENTRO del JWT (payload).
-// NO incluimos password_hash aquí por razones de seguridad.
+// password_hash se excluye del payload JWT intencionalmente.
 export interface AdminPayload {
   id: number;
   usuario: string;
 }
-
-// ─── Tipos para el panel de administración ───────────────────────────────────
 
 export interface FiltrosVehiculos {
   placa?: string;
@@ -97,7 +87,6 @@ export interface StatsAdmin {
   monto_recaudado: number;
 }
 
-// Resultado que devuelve el service de importación CSV al controller.
 export interface ResultadoCargaCSV {
   insertados: number;
   omitidos: number;
@@ -105,7 +94,6 @@ export interface ResultadoCargaCSV {
   advertencias: string[];
 }
 
-// Resultado de POST /api/admin/vigencias/generar-anual
 export interface ResultadoGenerarVigencias {
   anio: number;
   total_vehiculos: number;

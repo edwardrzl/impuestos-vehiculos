@@ -1,7 +1,3 @@
-// controllers/pagoController.ts
-// Lee `req`, llama al pagoService y arma `res`. El manejo de errores HTTP
-// (qué error de negocio es 400, cuál 404, cuál 500) lo hace responderConError.
-
 import type { Request, Response } from 'express';
 import * as pagoService from '../services/pagoService.js';
 import type { DatosPago } from '../services/pagoService.js';

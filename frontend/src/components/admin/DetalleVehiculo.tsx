@@ -1,7 +1,3 @@
-// components/admin/DetalleVehiculo.tsx
-// Panel lateral deslizante con el detalle completo de un vehículo:
-// datos del vehículo, tabla de vigencias y lista de pagos.
-
 import { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../utils/format';
@@ -17,15 +13,13 @@ interface Props {
 export default function DetalleVehiculo({ detalle, cargando, onCerrar }: Props) {
   const [pagoAbierto, setPagoAbierto] = useState<DatosComprobante | null>(null);
 
-  // Mapea un PagoAdmin a DatosComprobante para pasarlo a ModalComprobante.
-  // vigencias_pagadas es JSON.stringify(number[]) según pagoRepository.
   function abrirComprobante(pago: PagoAdmin) {
     if (!detalle) return;
     setPagoAbierto({
       referencia:    pago.referencia,
       placa:         detalle.vehiculo.placa,
       propietario:   detalle.vehiculo.propietario,
-      anios_pagados: JSON.parse(pago.vigencias_pagadas) as number[],
+      anios_pagados: JSON.parse(pago.vigencias_pagadas) as number[], // vigencias_pagadas es JSON.stringify(number[]) en BD
       monto_total:   pago.monto_total,
       metodo_pago:   pago.metodo_pago,
       fecha_pago:    pago.fecha_pago,
@@ -33,18 +27,15 @@ export default function DetalleVehiculo({ detalle, cargando, onCerrar }: Props) 
   }
 
   return (
-    // Overlay oscuro que cubre el fondo; al hacer clic fuera del panel, cierra.
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div
         className="absolute inset-0 bg-black/40"
         onClick={onCerrar}
       />
 
-      {/* Panel lateral */}
       <div className="absolute right-0 top-0 h-full w-full max-w-2xl
                       bg-white shadow-2xl flex flex-col overflow-hidden">
 
-        {/* Cabecera fija */}
         <div className="flex items-center justify-between px-6 py-4
                         border-b border-stone-200 bg-white sticky top-0 z-10">
           <h2 className="font-display text-xl text-navy-900">
@@ -61,7 +52,6 @@ export default function DetalleVehiculo({ detalle, cargando, onCerrar }: Props) 
           </button>
         </div>
 
-        {/* Contenido scrolleable */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           {cargando && (
             <div className="flex items-center justify-center py-20 text-stone-400">
@@ -72,7 +62,6 @@ export default function DetalleVehiculo({ detalle, cargando, onCerrar }: Props) 
 
           {!cargando && detalle && (
             <>
-              {/* Datos del vehículo */}
               <section>
                 <h3 className="text-xs font-semibold uppercase tracking-wider
                                text-stone-500 mb-3">
@@ -101,7 +90,6 @@ export default function DetalleVehiculo({ detalle, cargando, onCerrar }: Props) 
                 </div>
               </section>
 
-              {/* Vigencias */}
               <section>
                 <h3 className="text-xs font-semibold uppercase tracking-wider
                                text-stone-500 mb-3">
@@ -162,7 +150,6 @@ export default function DetalleVehiculo({ detalle, cargando, onCerrar }: Props) 
                 )}
               </section>
 
-              {/* Pagos */}
               <section>
                 <h3 className="text-xs font-semibold uppercase tracking-wider
                                text-stone-500 mb-3">
@@ -205,7 +192,7 @@ export default function DetalleVehiculo({ detalle, cargando, onCerrar }: Props) 
         </div>
       </div>
 
-      {/* Modal con cabecera navy: muestra un pago ya registrado, no un pago recién hecho */}
+      {/* Cabecera navy: pago ya registrado, no un pago recién procesado */}
       {pagoAbierto && (
         <ModalComprobante
           comprobante={pagoAbierto}

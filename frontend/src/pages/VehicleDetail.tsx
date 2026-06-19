@@ -1,7 +1,3 @@
-// pages/VehicleDetail.tsx - Pantalla principal del proyecto.
-// Muestra la información del vehículo, la lista de vigencias,
-// y permite seleccionar y pagar las pendientes.
-
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -26,15 +22,11 @@ export default function VehicleDetail() {
   const { placa = '' } = useParams<{ placa: string }>();
   const navigate = useNavigate();
 
-  // Hook custom: encapsula loading, error, datos y refresh.
   const { datos, cargando, error, refrescar } = useVehiculo(placa);
 
-  // === ESTADO LOCAL DE LA PÁGINA ===
   const [seleccionadas,   setSeleccionadas]   = useState<number[]>([]);
   const [mostrarPasarela, setMostrarPasarela] = useState(false);
   const [comprobante,     setComprobante]     = useState<DatosComprobante | null>(null);
-
-  // === HANDLERS ===
 
   function toggleVigencia(id: number) {
     setSeleccionadas((prev) =>
@@ -50,8 +42,7 @@ export default function VehicleDetail() {
     setSeleccionadas(idsPendientes);
   }
 
-  // Llamado desde ModalPasarela tras el delay simulado. Lanza si el backend falla
-  // (el modal captura el error y lo muestra en pantalla sin alertas nativas).
+  // Lanza si el backend falla; ModalPasarela captura el error y lo muestra en pantalla.
   async function ejecutarPago(): Promise<void> {
     const resultado = await procesarPago({
       placa,
@@ -73,10 +64,8 @@ export default function VehicleDetail() {
   function cerrarComprobante() {
     setComprobante(null);
     setSeleccionadas([]);
-    refrescar(); // Trae los datos actualizados (con las vigencias ya pagadas)
+    refrescar(); // trae los datos actualizados con las vigencias ya pagadas
   }
-
-  // === RENDERIZADO POR ESTADO ===
 
   if (cargando && !datos) {
     return <PantallaCargando />;
@@ -95,7 +84,6 @@ export default function VehicleDetail() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-paper pb-32">
-      {/* === Sub-navegación === */}
       <div className="bg-white border-b border-stone-200">
         <div className="max-w-6xl mx-auto px-6 lg:px-8 h-14 flex items-center">
           <button
@@ -112,9 +100,7 @@ export default function VehicleDetail() {
 
       <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* === COLUMNA IZQUIERDA: Info y vigencias === */}
           <div className="lg:col-span-2 space-y-5">
-            {/* Cabecera del vehículo */}
             <div className="card p-6">
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 bg-navy-50 rounded-xl flex items-center justify-center">
@@ -144,7 +130,6 @@ export default function VehicleDetail() {
               </div>
             </div>
 
-            {/* Lista de vigencias */}
             <div className="card overflow-hidden">
               <div className="px-6 py-4 border-b border-stone-200 flex items-center justify-between">
                 <div>
@@ -181,7 +166,6 @@ export default function VehicleDetail() {
             </div>
           </div>
 
-          {/* === COLUMNA DERECHA: Resumen / Liquidación === */}
           <aside className="space-y-5">
             <div className="card p-6 lg:sticky lg:top-6">
               <h3 className="font-semibold text-navy-900 mb-4">
@@ -218,7 +202,6 @@ export default function VehicleDetail() {
                 </div>
               )}
 
-              {/* Disclaimer */}
               <p className="text-xs text-stone-500 leading-relaxed mt-6 pt-6 border-t border-stone-200">
                 Si los datos no corresponden a las características de tu
                 vehículo, comunícate con la entidad correspondiente para
@@ -229,7 +212,6 @@ export default function VehicleDetail() {
         </div>
       </div>
 
-      {/* === BARRA INFERIOR DE PAGO === */}
       {seleccionadas.length > 0 && !comprobante && !mostrarPasarela && (
         <BarraPago
           cantidad={seleccionadas.length}
@@ -239,7 +221,6 @@ export default function VehicleDetail() {
         />
       )}
 
-      {/* === PASARELA DE PAGO === */}
       {mostrarPasarela && !comprobante && (
         <ModalPasarela
           total={totalSeleccionado}
@@ -249,7 +230,6 @@ export default function VehicleDetail() {
         />
       )}
 
-      {/* === MODAL DE COMPROBANTE === */}
       {comprobante && (
         <ModalComprobante
           comprobante={comprobante}
@@ -259,9 +239,6 @@ export default function VehicleDetail() {
     </div>
   );
 }
-
-// === SUB-COMPONENTES PRIVADOS DEL ARCHIVO ===
-// Como solo se usan aquí, no vale la pena ponerlos en archivos separados.
 
 function PantallaCargando() {
   return (

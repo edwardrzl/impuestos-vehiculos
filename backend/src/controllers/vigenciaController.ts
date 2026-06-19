@@ -1,7 +1,3 @@
-// controllers/vigenciaController.ts
-// Lee y valida el body del request, llama al service y arma la respuesta HTTP.
-// Única capa que toca req/res en el flujo de vigencias.
-
 import type { Request, Response } from 'express';
 import * as vigenciaService from '../services/vigenciaService.js';
 import { responderConError } from './errorHttp.js';
@@ -19,15 +15,12 @@ export function obtenerAnioSiguiente(_req: Request, res: Response): void {
 
 /**
  * POST /api/admin/vigencias/generar-anual
- *
- * Body esperado:
- *   { anio, tasa_pct, descuento_pct, fecha_vencimiento }
+ * Body: { anio, tasa_pct, descuento_pct, fecha_vencimiento }
  */
 export function generarVigenciasAnuales(req: Request, res: Response): void {
   try {
     const { anio, tasa_pct, descuento_pct, fecha_vencimiento } = req.body as Record<string, unknown>;
 
-    // Validar presencia y tipos básicos antes de pasarlos al service.
     if (typeof anio !== 'number' || !Number.isInteger(anio)) {
       throw new DatosInvalidos('El campo "anio" debe ser un entero');
     }

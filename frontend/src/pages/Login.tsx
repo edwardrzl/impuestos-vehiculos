@@ -1,5 +1,3 @@
-// pages/Login.tsx - Formulario de acceso del administrador.
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Loader2 } from 'lucide-react';
@@ -33,7 +31,6 @@ export default function Login() {
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-paper flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        {/* Encabezado */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-navy-900 rounded-2xl mb-4">
             <ShieldCheck className="text-white" size={28} />
@@ -43,7 +40,6 @@ export default function Login() {
           </h1>
         </div>
 
-        {/* Card del formulario */}
         <div className="card p-6 md:p-8">
           <form onSubmit={manejarEnvio} className="space-y-5">
             <div>
@@ -90,7 +86,6 @@ export default function Login() {
               />
             </div>
 
-            {/* Mensaje de error: solo visible cuando hay un error */}
             {error && (
               <p className="text-sm text-coral-600 bg-coral-50 px-4 py-3 rounded-lg">
                 {error}

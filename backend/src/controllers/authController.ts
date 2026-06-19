@@ -1,6 +1,3 @@
-// controllers/authController.ts
-// Lee req.body, llama al service y arma res. El try/catch delega en responderConError.
-
 import type { Request, Response } from 'express';
 import * as authService from '../services/authService.js';
 import { responderConError } from './errorHttp.js';

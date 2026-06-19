@@ -1,7 +1,3 @@
-// components/ModalPasarela.tsx - Formulario de tarjeta simulado.
-// Valida los campos en el frontend, simula un delay de pasarela de 2-3 s y
-// llama a onConfirmar() (que dispara el endpoint real de pago).
-
 import { useState, useEffect } from 'react';
 import { CreditCard, Lock, Loader2, AlertCircle, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
@@ -33,7 +29,7 @@ function formatearVencimiento(valor: string): string {
   return digitos.length > 2 ? `${digitos.slice(0, 2)}/${digitos.slice(2)}` : digitos;
 }
 
-// La tarjeta es válida si el primer día del mes SIGUIENTE al vencimiento es futuro.
+// La tarjeta es válida si el primer día del mes siguiente al vencimiento es futuro.
 function vencimientoEsValido(valor: string): boolean {
   if (!/^\d{2}\/\d{2}$/.test(valor)) return false;
   const mes = parseInt(valor.slice(0, 2), 10);
@@ -51,7 +47,6 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
   const [procesando,  setProcesando]  = useState(false);
   const [errorPago,   setErrorPago]   = useState<string | null>(null);
 
-  // Escape cierra el modal (solo si no está procesando)
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape' && !procesando) onCancelar();
@@ -79,18 +74,17 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
     setProcesando(true);
 
     try {
-      // Delay que simula el tiempo de respuesta de una pasarela real
+      // Simula el tiempo de respuesta de una pasarela real (~2-3 s)
       await new Promise<void>((r) => setTimeout(r, 2000 + Math.random() * 1000));
       await onConfirmar();
       // Si llega aquí sin error, VehicleDetail mostrará el comprobante y
-      // desmontará este modal — no necesitamos hacer nada más.
+      // desmontará este modal — no hay que hacer nada más.
     } catch (err) {
       setErrorPago(err instanceof Error ? err.message : 'Error al procesar el pago');
       setProcesando(false);
     }
   }
 
-  // Clase dinámica para inputs: resalta en coral si tiene error
   function claseInput(campo: keyof ErroresCampos) {
     return `w-full px-4 py-2.5 rounded-lg border text-navy-900 placeholder:text-stone-400
             focus:outline-none focus:ring-2 focus:border-transparent transition-shadow
@@ -110,7 +104,6 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Cabecera */}
         <div className="relative px-6 pt-8 pb-6 text-center bg-gradient-to-br from-navy-800 to-navy-900 text-white">
           {!procesando && (
             <button
@@ -134,7 +127,6 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
         </div>
 
         <div className="p-6">
-          {/* Estado de procesamiento: reemplaza el formulario */}
           {procesando ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
               <Loader2 size={40} className="animate-spin text-navy-700" />
@@ -143,8 +135,6 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-
-              {/* Número de tarjeta */}
               <div>
                 <label className="block text-sm font-medium text-navy-800 mb-1.5">
                   Número de tarjeta
@@ -166,7 +156,6 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
                 )}
               </div>
 
-              {/* Nombre del titular */}
               <div>
                 <label className="block text-sm font-medium text-navy-800 mb-1.5">
                   Nombre del titular
@@ -186,7 +175,6 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
                 )}
               </div>
 
-              {/* Vencimiento + CVV en la misma fila */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-navy-800 mb-1.5">
@@ -231,7 +219,6 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
                 </div>
               </div>
 
-              {/* Error que vino del backend */}
               {errorPago && (
                 <div className="flex items-start gap-2.5 text-sm text-coral-700
                                 bg-coral-50 border border-coral-200 rounded-xl px-4 py-3">
@@ -240,13 +227,11 @@ export default function ModalPasarela({ total, cantidad, onConfirmar, onCancelar
                 </div>
               )}
 
-              {/* Indicador de seguridad */}
               <div className="flex items-center gap-2 text-xs text-stone-400 pt-1">
                 <Lock size={12} />
                 <span>Conexión cifrada. Tus datos están protegidos.</span>
               </div>
 
-              {/* Acciones */}
               <div className="flex gap-3 pt-1">
                 <button
                   type="button"

@@ -1,7 +1,3 @@
-// components/admin/TablaVehiculos.tsx - Tabla paginada de vehículos.
-// Las columnas visibles las controla el padre. Al hacer clic en una fila
-// se dispara onFilaClick con la placa para cargar el detalle.
-
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../../utils/format';
 import type { Vehiculo } from '../../types';
@@ -19,7 +15,6 @@ interface Props {
   onPaginaSiguiente: () => void;
 }
 
-/** Formatea el valor de una celda según la columna. */
 function formatearCelda(clave: keyof Vehiculo, valor: unknown): string {
   if (valor === null || valor === undefined) return '—';
   if (clave === 'avaluo') return formatCurrency(valor as number);
@@ -37,7 +32,7 @@ export default function TablaVehiculos({
   onPaginaAnterior,
   onPaginaSiguiente,
 }: Props) {
-  // Columnas visibles: siempre incluimos placa primero, luego el resto activado.
+  // Placa siempre va primero, independientemente del orden en la config.
   const columnasMostrar = [
     columnas.find((c) => c.clave === 'placa')!,
     ...columnas.filter((c) => c.clave !== 'placa' && c.visible),
@@ -49,7 +44,6 @@ export default function TablaVehiculos({
 
   return (
     <div className="card overflow-hidden">
-      {/* Tabla */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-stone-50 border-b border-stone-200">
@@ -116,7 +110,6 @@ export default function TablaVehiculos({
         </table>
       </div>
 
-      {/* Pie: contador + paginación */}
       {!cargando && total > 0 && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-stone-200 bg-stone-50">
           <span className="text-xs text-stone-500">
