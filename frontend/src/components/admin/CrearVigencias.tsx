@@ -10,7 +10,7 @@ import type { ResultadoGenerarVigencias } from '../../types';
 import { formatCurrency } from '../../utils/format';
 
 // Fallback mientras se resuelve el fetch inicial; el endpoint lo reemplaza con el valor real.
-const ANIO_FALLBACK = 2027;
+const ANIO_FALLBACK = 2026;
 
 // Genera la fecha de vencimiento por defecto para un año dado (30 de junio).
 function fechaVencimientoPorDefecto(anio: number): string {

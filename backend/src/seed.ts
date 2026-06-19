@@ -1,5 +1,8 @@
 import db from './db.js';
 import bcrypt from 'bcryptjs';
+import { fileURLToPath } from 'url';
+
+export function runSeed(): void {
 
 console.log('🌱 Limpiando datos previos...');
 
@@ -113,29 +116,29 @@ const vigenciasData: VigenciaSeed[] = [
   ['SLY29E', 2023, 103254, 'pagado', '2023-04-20'],
   ['SLY29E', 2024, 110223, 'pagado', '2024-05-10'],
   ['SLY29E', 2025, 121688, 'pagado', '2025-04-25'],
-  ['SLY29E', 2026, 85000, 'pendiente', null],
+  //['SLY29E', 2026, 85000, 'pendiente', null],
 
   // ABC123 - Al día
   ['ABC123', 2023, 458000, 'pagado', '2023-05-10'],
   ['ABC123', 2024, 487000, 'pagado', '2024-04-15'],
   ['ABC123', 2025, 512000, 'pagado', '2025-05-20'],
-  ['ABC123', 2026, 545000, 'pagado', '2026-04-10'],
+  //['ABC123', 2026, 545000, 'pagado', '2026-04-10'],
 
   // XYZ789 - Camioneta con varias deudas
   ['XYZ789', 2023, 2180000, 'pagado', '2023-05-15'],
   ['XYZ789', 2024, 2315000, 'pendiente', null],
   ['XYZ789', 2025, 2456000, 'pendiente', null],
-  ['XYZ789', 2026, 2580000, 'pendiente', null],
+  //['XYZ789', 2026, 2580000, 'pendiente', null],
 
   // MOT001 - Solo 2026 pendiente
   ['MOT001', 2024, 145000, 'pagado', '2024-04-30'],
   ['MOT001', 2025, 158000, 'pagado', '2025-05-10'],
-  ['MOT001', 2026, 172000, 'pendiente', null],
+  //['MOT001', 2026, 172000, 'pendiente', null],
 
   // WXY456 - Renault con 2 pendientes
   ['WXY456', 2024, 612000, 'pagado', '2024-04-20'],
   ['WXY456', 2025, 648000, 'pendiente', null],
-  ['WXY456', 2026, 685000, 'pendiente', null],
+  //['WXY456', 2026, 685000, 'pendiente', null],
 ];
 
 const insertVigencia = db.prepare(`
@@ -182,3 +185,10 @@ console.log('');
 console.log('Credenciales de admin:');
 console.log('  • usuario: admin');
 console.log('  • contraseña: Admin123*');
+console.log('');
+}
+
+// Permite correr directamente: npm run seed
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  runSeed();
+}

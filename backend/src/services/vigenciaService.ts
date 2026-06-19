@@ -22,7 +22,7 @@ export interface ResultadoGenerarVigencias {
   errores: number;
 }
 
-const ANIO_MINIMO = 2027;
+const ANIO_MINIMO = 2026;
 
 /** Devuelve el año para el que se deben crear las próximas vigencias. */
 export function obtenerAnioSiguiente(): number {

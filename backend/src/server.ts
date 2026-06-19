@@ -17,6 +17,8 @@ import vehiculosRouter from './routes/vehiculos.js';
 import pagosRouter from './routes/pagos.js';
 import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
+import db from './db.js';
+import { runSeed } from './seed.js';
 
 const app = express();
 //const PORT = 3001;
@@ -47,6 +49,15 @@ app.use('/api/vehiculos', vehiculosRouter);
 app.use('/api/pagos', pagosRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
+
+// === AUTO-SEED EN PRODUCCIÓN ===
+// Si la base de datos arranca vacía (ej. Render con volumen nuevo), corre el
+// seed automáticamente. En desarrollo no hace nada porque ya hay datos.
+const { total } = db.prepare('SELECT COUNT(*) as total FROM vehiculos').get() as { total: number };
+if (total === 0) {
+  console.log('⚙️  Base de datos vacía, ejecutando seed inicial...');
+  runSeed();
+}
 
 // === ARRANCAR SERVIDOR ===
 app.listen(PORT, () => {
