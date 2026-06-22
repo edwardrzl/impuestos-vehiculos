@@ -1,5 +1,7 @@
 # Impuestos Vehiculares
 
+cambio desde casa
+
 Portal de consulta y pago de impuestos vehiculares municipales. Los ciudadanos pueden consultar el estado de sus obligaciones por placa y procesar pagos en línea. Incluye panel de administración protegido con JWT para gestionar vehículos, vigencias y carga masiva de datos vía CSV.
 
 **Deploy:** https://impuestos-vehiculos.onrender.com
