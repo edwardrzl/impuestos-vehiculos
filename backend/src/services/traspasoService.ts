@@ -1,12 +1,21 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { ProxyAgent, setGlobalDispatcher } from 'undici';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// undici (el cliente fetch interno de Node.js) no lee HTTPS_PROXY / HTTP_PROXY
+// automáticamente. Configuramos el dispatcher global aquí para que todas las
+// peticiones outbound (incluidas las del SDK de Gemini) pasen por el proxy.
+const _proxyUrl = process.env.HTTPS_PROXY ?? process.env.HTTP_PROXY;
+if (_proxyUrl) {
+  setGlobalDispatcher(new ProxyAgent(_proxyUrl));
+}
 import * as solicitudRepository from '../repositories/solicitudTraspasoRepository.js';
 import * as vehiculoRepository from '../repositories/vehiculoRepository.js';
 import * as ciudadanoRepository from '../repositories/ciudadanoRepository.js';
 import { ErrorPasarela, ServicioNoDisponible, RecursoNoEncontrado, ConflictoRecurso } from '../errors.js';
-import { ANTHROPIC_API_KEY, MODELO_IA_TRASPASO } from '../config.js';
+import { GEMINI_API_KEY } from '../config.js';
 import type { ResultadoIA, SolicitudTraspaso, SolicitudTraspasoAdmin } from '../types.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -50,43 +59,48 @@ const RESULTADO_ILEGIBLE: ResultadoIA = {
 };
 
 async function analizarConIA(rutaAbsoluta: string): Promise<ResultadoIA> {
-  // PASO 1: la API de Anthropic recibe imágenes como base64 dentro del JSON de la
-  // petición (no acepta rutas ni multipart), por eso leemos el archivo y lo codificamos.
+  // PASO 1: Gemini recibe imágenes como inlineData (base64 + mimeType) dentro del
+  // cuerpo de la petición, igual que Anthropic. Leemos el archivo y lo codificamos.
   const base64 = fs.readFileSync(rutaAbsoluta).toString('base64');
   const extension = path.extname(rutaAbsoluta).toLowerCase();
-  const mediaType: 'image/jpeg' | 'image/png' =
+  const mimeType: 'image/jpeg' | 'image/png' =
     extension === '.png' ? 'image/png' : 'image/jpeg';
 
-  const cliente = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  // PASO 2: inicializar el cliente de Gemini y llamar al modelo de visión.
+  // PROMPT_SISTEMA se pasa como systemInstruction para mantener la misma
+  // separación de roles que tenía la implementación con Claude.
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY!);
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash-lite',
+    systemInstruction: PROMPT_SISTEMA,
+  });
 
-  // PASO 2: llamar a Claude Vision. Cualquier fallo de la API se traduce a 502.
+  const imagePart = {
+    inlineData: {
+      data: base64,
+      mimeType,
+    },
+  };
+
   let textoRespuesta: string;
   try {
-    const respuesta = await cliente.messages.create({
-      model: MODELO_IA_TRASPASO,
-      max_tokens: 1024,
-      system: PROMPT_SISTEMA,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: PROMPT_USUARIO },
-          ],
-        },
-      ],
-    });
-
-    const bloqueTexto = respuesta.content.find((b) => b.type === 'text');
-    textoRespuesta = bloqueTexto && bloqueTexto.type === 'text' ? bloqueTexto.text : '';
-  } catch (error) {
-    console.error('Error llamando a la API de Anthropic:', error);
+    const result = await model.generateContent([PROMPT_USUARIO, imagePart]);
+    textoRespuesta = result.response.text();
+  } catch (error: unknown) {
+    console.error('Error llamando a la API de Gemini:', error);
+    // 429: cuota agotada → el usuario debe esperar unos segundos.
+    const status = (error as { status?: number }).status;
+    if (status === 429) {
+      throw new ServicioNoDisponible(
+        'El servicio de validación está ocupado en este momento. Espera unos segundos y vuelve a intentarlo.'
+      );
+    }
     throw new ErrorPasarela('Error al procesar la imagen con IA. Intenta de nuevo.');
   }
 
-  // PASO 3: parsear el JSON. Si no es válido, lo tratamos como ilegible (confianza baja).
+  // PASO 3: parsear el JSON. Gemini puede devolver bloques de código markdown
+  // (```json ... ```) aunque el prompt lo prohíba, por lo que limpiamos primero.
   try {
-    // Por robustez, quitamos posibles cercos de código aunque el prompt pida que no los use.
     const limpio = textoRespuesta.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
     return JSON.parse(limpio) as ResultadoIA;
   } catch {
@@ -111,7 +125,7 @@ export async function crearSolicitud(datos: {
   mensaje: string;
 }> {
   // 503 inmediato si no hay clave: no tiene sentido intentar la llamada a la IA.
-  if (!ANTHROPIC_API_KEY) {
+  if (!GEMINI_API_KEY) {
     throw new ServicioNoDisponible(
       'La validación automática de documentos no está disponible en este momento.'
     );
