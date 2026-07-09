@@ -18,6 +18,8 @@ import type {
   SolicitudTraspasoResponse,
   SolicitudTraspasoHistorial,
   SolicitudTraspasoAdmin,
+  MensajeChat,
+  RespuestaChat,
 } from '../types';
 import { leerToken, obtenerTokenCiudadano } from '../auth/session';
 
@@ -121,6 +123,14 @@ export function generarVigenciasAnuales(params: {
   return request<ResultadoGenerarVigencias>('/api/admin/vigencias/generar-anual', {
     method: 'POST',
     body: JSON.stringify(params),
+  });
+}
+
+// El historial completo viaja en cada turno: Gemini no tiene memoria server-side.
+export function enviarMensajeChat(historial: MensajeChat[]): Promise<RespuestaChat> {
+  return request<RespuestaChat>('/api/chat', {
+    method: 'POST',
+    body: JSON.stringify({ historial }),
   });
 }
 

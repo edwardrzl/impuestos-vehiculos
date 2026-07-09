@@ -82,6 +82,35 @@ export function procesarPago(datos: DatosPago): ComprobantePago {
   };
 }
 
+/** Comprobantes de pagos anteriores de un vehículo, opcionalmente filtrados
+ *  por el año de la vigencia pagada. */
+export function buscarComprobantes(placaRecibida: string, anio?: number): ComprobanteConsultado[] {
+  const placa = placaRecibida.toUpperCase().trim();
+
+  const vehiculo = vehiculoRepository.buscarPorPlaca(placa);
+  if (!vehiculo) {
+    throw new RecursoNoEncontrado(
+      'Vehículo no encontrado',
+      `No se encontró ningún vehículo con la placa ${placa}`
+    );
+  }
+
+  const comprobantes = pagoRepository.listarPorPlaca(placa).map((pago) => ({
+    id: pago.id,
+    referencia: pago.referencia,
+    placa: pago.placa,
+    propietario: vehiculo.propietario,
+    anios_pagados: JSON.parse(pago.vigencias_pagadas) as number[],
+    monto_total: pago.monto_total,
+    metodo_pago: pago.metodo_pago,
+    fecha_pago: pago.fecha_pago,
+  }));
+
+  return anio === undefined
+    ? comprobantes
+    : comprobantes.filter((c) => c.anios_pagados.includes(anio));
+}
+
 export function consultarPago(referencia: string): ComprobanteConsultado {
   const pago = pagoRepository.buscarPorReferencia(referencia);
   if (!pago) {

@@ -24,6 +24,10 @@ const marcarVigenciaPagada = db.prepare(
 
 const buscarPagoPorReferencia = db.prepare('SELECT * FROM pagos WHERE referencia = ?');
 
+const listarPagosPorPlaca = db.prepare(
+  'SELECT * FROM pagos WHERE placa = ? ORDER BY fecha_pago DESC'
+);
+
 // vigencias_pagadas se serializa como JSON porque SQLite no tiene tipo array.
 export function registrarPago(datos: NuevoPago): number {
   const transaccion = db.transaction((p: NuevoPago) => {
@@ -48,4 +52,8 @@ export function registrarPago(datos: NuevoPago): number {
 
 export function buscarPorReferencia(referencia: string): Pago | undefined {
   return buscarPagoPorReferencia.get(referencia) as Pago | undefined;
+}
+
+export function listarPorPlaca(placa: string): Pago[] {
+  return listarPagosPorPlaca.all(placa) as Pago[];
 }

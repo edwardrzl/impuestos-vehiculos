@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
+import AsistenteIA from './components/AsistenteIA';
 import Home from './pages/Home';
 import VehicleDetail from './pages/VehicleDetail';
 import Login from './pages/Login';
@@ -52,6 +53,8 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      {/* Flotante en toda la app; mantiene su estado al navegar entre páginas. */}
+      <AsistenteIA />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import authRouter from './routes/auth.js';
 import adminRouter from './routes/admin.js';
 import ciudadanosRouter from './routes/ciudadanos.js';
 import traspasosRouter from './routes/traspasos.js';
+import chatRouter from './routes/chat.js';
 import db from './db.js';
 import { runSeed } from './seed.js';
 
@@ -42,6 +43,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/ciudadanos', ciudadanosRouter);
 app.use('/api/traspasos', traspasosRouter);
+app.use('/api/chat', chatRouter);
 
 // En producción la BD arranca vacía; el seed corre una sola vez si no hay vehículos.
 const { total } = db.prepare('SELECT COUNT(*) as total FROM vehiculos').get() as { total: number };
@@ -62,5 +64,6 @@ app.listen(PORT, () => {
   console.log(`     GET  /api/pagos/:referencia`);
   console.log(`     POST /api/auth/login`);
   console.log(`     GET  /api/admin/me   (requiere JWT)`);
+  console.log(`     POST /api/chat`);
   console.log('');
 });

@@ -2,6 +2,18 @@
 // Espejan exactamente lo que devuelve el backend.
 // Cuando cambies algo en el backend, recuerda actualizar aquí también.
 
+// ─── Asistente IA ─────────────────────────────────────────────────────────────
+
+// Formato de mensaje que espera POST /api/chat (compatible con el SDK de Gemini).
+export interface MensajeChat {
+  role: 'user' | 'model';
+  parts: Array<{ text: string }>;
+}
+
+export interface RespuestaChat {
+  respuesta: string;
+}
+
 export interface Vehiculo {
   placa: string;
   clase: string;
