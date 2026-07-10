@@ -66,9 +66,8 @@ export default function Admin() {
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [refrescarKey,    setRefrescarKey]    = useState(0);
 
-  // Contador de traspasos pendientes: se carga por separado de /stats porque
-  // viene de un endpoint distinto (solicitudes-traspaso) y debe estar visible
-  // incluso cuando la pestaña de solicitudes no está activa.
+  // Contador de traspasos pendientes: viene de un endpoint distinto de /stats y
+  // debe estar visible aunque la pestaña de solicitudes no esté activa.
   const [pendientesTraspaso, setPendientesTraspaso] = useState<number | null>(null);
 
   // Debounce de 350 ms: evita un fetch por cada tecla en los inputs de filtro.
@@ -79,7 +78,7 @@ export default function Admin() {
 
   // Carga el contador de traspasos pendientes al montar la página.
   useEffect(() => {
-    listarSolicitudesTraspaso('pendiente')
+    listarSolicitudesTraspaso('PENDIENTE_REVISION_ADMIN')
       .then((lista) => setPendientesTraspaso(lista.length))
       .catch(() => { /* silencioso */ });
   }, []);
@@ -178,8 +177,7 @@ export default function Admin() {
           <>
             {stats && <StatsCards stats={stats} />}
 
-            {/* Aviso de traspasos pendientes: se muestra solo si hay alguno,
-                con enlace directo a la pestaña de solicitudes. */}
+            {/* Aviso de traspasos pendientes con enlace directo a la pestaña. */}
             {pendientesTraspaso != null && pendientesTraspaso > 0 && (
               <div className="mb-4 flex items-center gap-2 px-4 py-2.5 rounded-lg
                               bg-amber-50 border border-amber-200 text-amber-800 text-sm">

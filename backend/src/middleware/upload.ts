@@ -35,8 +35,19 @@ export const uploadDocumento = multer({
   limits: { fileSize: LIMITE_5MB },
 });
 
-export const uploadTarjeta = multer({
-  storage: crearAlmacenamiento('tarjetas'),
-  fileFilter: soloImagenes,
-  limits: { fileSize: LIMITE_5MB },
+// La foto del traspaso va a memoria (no a disco): el nombre final necesita el
+// userId autenticado y la placa (que multer no conoce al escribir el archivo),
+// y el buffer se envía a Gemini sin re-leer del disco.
+const soloImagenesTraspaso: multer.Options['fileFilter'] = (_req, file, cb) => {
+  if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Solo se permiten imágenes JPEG, PNG o WEBP'));
+  }
+};
+
+export const uploadTarjetaTraspaso = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: soloImagenesTraspaso,
+  limits: { fileSize: 8 * 1024 * 1024 },
 });

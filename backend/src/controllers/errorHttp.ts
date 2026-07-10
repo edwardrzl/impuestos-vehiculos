@@ -1,5 +1,5 @@
 import type { Response } from 'express';
-import { RecursoNoEncontrado, DatosInvalidos, CredencialesInvalidas, ConflictoRecurso, ErrorPasarela, ServicioNoDisponible, ErrorDeNegocio } from '../errors.js';
+import { RecursoNoEncontrado, DatosInvalidos, CredencialesInvalidas, ConflictoRecurso, LimiteExcedido, ErrorPasarela, ServicioNoDisponible, ErrorDeNegocio } from '../errors.js';
 
 function construirCuerpo(error: ErrorDeNegocio) {
   return error.detalle
@@ -32,6 +32,11 @@ export function responderConError(res: Response, error: unknown, contextoLog: st
 
   if (error instanceof ConflictoRecurso) {
     res.status(409).json(construirCuerpo(error));
+    return;
+  }
+
+  if (error instanceof LimiteExcedido) {
+    res.status(429).json(construirCuerpo(error));
     return;
   }
 

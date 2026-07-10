@@ -31,8 +31,10 @@ export default function PortalCiudadano() {
                 <FileText size={20} className="text-navy-700 group-hover:text-white transition-colors" />
               </div>
               <div>
-                <p className="font-semibold text-navy-900">Solicitar traspaso vehicular</p>
-                <p className="text-sm text-stone-500">Inicia el proceso de cambio de propietario</p>
+                <p className="font-semibold text-navy-900">Traspaso de vehículo</p>
+                <p className="text-sm text-stone-500">
+                  Valida tu tarjeta de propiedad y solicita el cambio de titular
+                </p>
               </div>
             </div>
           </button>

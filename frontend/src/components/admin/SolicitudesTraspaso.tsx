@@ -1,461 +1,247 @@
-import { useState, useEffect, useMemo } from 'react';
-import {
-  Loader2, CheckCircle2, AlertTriangle, XCircle, X, ChevronRight,
-} from 'lucide-react';
-import { listarSolicitudesTraspaso, resolverSolicitudAdmin } from '../../api/client';
-import type { SolicitudTraspasoAdmin, EstadoSolicitud } from '../../types';
+// SolicitudesTraspaso.tsx - Pestaña del panel admin para revisar solicitudes
+// de traspaso: lista con filtro por estado, foto de la tarjeta visualizable,
+// y resolución (aprobar/rechazar) con comentario opcional.
 
-type FiltroUI = 'todas' | 'pendiente' | 'resueltas';
+import { useCallback, useEffect, useState } from 'react';
+import { CheckCircle2, Loader2, XCircle, X } from 'lucide-react';
+import { listarSolicitudesTraspaso, resolverSolicitudAdmin, urlArchivo } from '../../api/client';
+import type { SolicitudTraspasoAdmin, EstadoSolicitudTraspaso } from '../../types';
 
-const BADGE_ESTADO: Record<EstadoSolicitud, string> = {
-  aprobado: 'bg-green-100 text-green-700',
-  pendiente: 'bg-amber-100 text-amber-700',
-  rechazado: 'bg-red-100 text-red-700',
+const BADGE_ESTADO: Record<EstadoSolicitudTraspaso, { clase: string; texto: string }> = {
+  PENDIENTE_REVISION_ADMIN: { clase: 'bg-amber-100 text-amber-700', texto: 'Pendiente' },
+  APROBADO: { clase: 'bg-green-100 text-green-700', texto: 'Aprobado' },
+  RECHAZADO: { clase: 'bg-coral-100 text-coral-700', texto: 'Rechazado' },
 };
 
-function formatearFecha(iso: string | null): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('es-CO', {
-    year: 'numeric', month: 'short', day: 'numeric',
+const FILTROS: Array<{ valor: EstadoSolicitudTraspaso | ''; etiqueta: string }> = [
+  { valor: 'PENDIENTE_REVISION_ADMIN', etiqueta: 'Pendientes' },
+  { valor: 'APROBADO', etiqueta: 'Aprobadas' },
+  { valor: 'RECHAZADO', etiqueta: 'Rechazadas' },
+  { valor: '', etiqueta: 'Todas' },
+];
+
+function formatearFecha(iso: string): string {
+  return new Date(iso).toLocaleString('es-CO', {
+    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
 
-function BadgeVerificacion({ s }: { s: SolicitudTraspasoAdmin }) {
-  if (s.validacion_db === 1) {
-    return (
-      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-        Verificado
-      </span>
-    );
-  }
-  if (s.resultado_ia?.es_tarjeta_propiedad) {
-    return (
-      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-        Sin verificar
-      </span>
-    );
-  }
-  return (
-    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-      No reconocido
-    </span>
-  );
-}
-
-function DatoFila({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <p className="text-xs text-stone-500">{label}</p>
-      <p className={`text-sm font-medium text-navy-900 mt-0.5 break-all ${mono ? 'font-mono' : ''}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-interface ModalProps {
-  solicitud: SolicitudTraspasoAdmin;
-  notas: string;
-  onNotasChange: (v: string) => void;
-  procesando: boolean;
-  error: string;
-  onResolver: (estado: 'aprobado' | 'rechazado') => void;
-  onCerrar: () => void;
-}
-
-function ModalDetalle({
-  solicitud: s, notas, onNotasChange, procesando, error, onResolver, onCerrar,
-}: ModalProps) {
-  // foto_tarjeta_path es relativo a la raíz del backend: "uploads/tarjetas/123.jpg"
-  // express.static sirve /uploads, así que la URL pública es "/uploads/tarjetas/123.jpg".
-  const fotoUrl = `/${s.foto_tarjeta_path.replace(/\\/g, '/')}`;
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-black/40" onClick={onCerrar} />
-
-      <div className="absolute right-0 top-0 h-full w-full max-w-2xl
-                      bg-white shadow-2xl flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4
-                        border-b border-stone-200 bg-white sticky top-0 z-10">
-          <h2 className="font-display text-xl text-navy-900">
-            Solicitud <span className="text-stone-500">#{s.id}</span>{' '}
-            — <span className="font-mono">{s.placa}</span>
-          </h2>
-          <button
-            onClick={onCerrar}
-            className="p-2 rounded-lg hover:bg-stone-100 text-stone-500 transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Datos del ciudadano solicitante */}
-          <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-3">
-              Ciudadano solicitante
-            </h3>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <DatoFila label="Nombre"          value={s.ciudadano_nombre} />
-              <DatoFila label="Documento"       value={s.ciudadano_documento} mono />
-              <DatoFila label="Email"           value={s.ciudadano_email} />
-              <DatoFila label="Placa solicitada" value={s.placa} mono />
-              <DatoFila label="Fecha solicitud"  value={formatearFecha(s.fecha_solicitud)} />
-            </div>
-          </section>
-
-          {/* Foto de la tarjeta subida por el ciudadano */}
-          <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-3">
-              Tarjeta de propiedad
-            </h3>
-            <img
-              src={fotoUrl}
-              alt="Tarjeta de propiedad vehicular"
-              className="w-full max-h-64 object-contain rounded-xl border border-stone-200 bg-stone-50"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </section>
-
-          {/* Resultado del análisis de IA */}
-          <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-3">
-              Análisis por IA
-            </h3>
-            {s.resultado_ia ? (
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                <DatoFila
-                  label="¿Es tarjeta de propiedad?"
-                  value={s.resultado_ia.es_tarjeta_propiedad ? 'Sí' : 'No'}
-                />
-                <DatoFila label="Confianza" value={s.resultado_ia.confianza} />
-                <DatoFila
-                  label="Placa extraída"
-                  value={s.resultado_ia.placa_extraida ?? '—'}
-                  mono
-                />
-                <DatoFila
-                  label="Documento extraído"
-                  value={s.resultado_ia.documento_extraido ?? '—'}
-                  mono
-                />
-                <div className="col-span-2">
-                  <DatoFila label="Observaciones" value={s.resultado_ia.observaciones} />
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-stone-400">Sin resultado de IA disponible.</p>
-            )}
-          </section>
-
-          {/* Resultado de la comparación contra la BD */}
-          <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-3">
-              Verificación automática
-            </h3>
-            {s.validacion_db === 1 ? (
-              <div className="flex items-start gap-2 text-green-700 bg-green-50 rounded-lg px-4 py-3">
-                <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
-                <span className="text-sm">
-                  ✓ Placa y documento coinciden con el registro del vehículo.
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-start gap-2 text-amber-700 bg-amber-50 rounded-lg px-4 py-3">
-                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                <span className="text-sm">
-                  ✗ No fue posible verificar automáticamente.
-                </span>
-              </div>
-            )}
-          </section>
-
-          {/* Datos actuales del vehículo en la BD para comparación visual */}
-          {(s.vehiculo_marca || s.vehiculo_propietario) && (
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-3">
-                Vehículo registrado — propietario actual
-              </h3>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                {s.vehiculo_marca && (
-                  <DatoFila
-                    label="Vehículo"
-                    value={`${s.vehiculo_marca} ${s.vehiculo_linea ?? ''} ${s.vehiculo_modelo ?? ''}`.trim()}
-                  />
-                )}
-                {s.vehiculo_propietario && (
-                  <DatoFila label="Propietario actual" value={s.vehiculo_propietario} />
-                )}
-                {s.vehiculo_documento_propietario && (
-                  <DatoFila
-                    label="Documento actual"
-                    value={s.vehiculo_documento_propietario}
-                    mono
-                  />
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Acciones (solo si está pendiente) o estado final */}
-          {s.estado === 'pendiente' ? (
-            <section className="space-y-3 pt-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Resolución
-              </h3>
-              <div>
-                <label className="block text-sm font-medium text-navy-800 mb-1.5">
-                  Notas del administrador (opcional)
-                </label>
-                <textarea
-                  value={notas}
-                  onChange={(e) => onNotasChange(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-stone-300 resize-none
-                             focus:outline-none focus:ring-2 focus:ring-navy-500 focus:border-transparent"
-                  placeholder="Observaciones para el ciudadano..."
-                />
-              </div>
-
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2">{error}</p>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => onResolver('aprobado')}
-                  disabled={procesando}
-                  className="flex-1 py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white
-                             text-sm font-semibold rounded-xl transition-colors disabled:opacity-50
-                             flex items-center justify-center gap-2"
-                >
-                  {procesando
-                    ? <Loader2 size={15} className="animate-spin" />
-                    : <CheckCircle2 size={15} />}
-                  Aprobar traspaso
-                </button>
-                <button
-                  onClick={() => onResolver('rechazado')}
-                  disabled={procesando}
-                  className="flex-1 py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white
-                             text-sm font-semibold rounded-xl transition-colors disabled:opacity-50
-                             flex items-center justify-center gap-2"
-                >
-                  {procesando
-                    ? <Loader2 size={15} className="animate-spin" />
-                    : <XCircle size={15} />}
-                  Rechazar
-                </button>
-              </div>
-            </section>
-          ) : (
-            <section className="pt-2 space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                Estado final
-              </h3>
-              <div
-                className={`rounded-lg px-4 py-3 ${
-                  s.estado === 'aprobado'
-                    ? 'bg-green-50 text-green-800'
-                    : 'bg-red-50 text-red-800'
-                }`}
-              >
-                <p className="font-semibold capitalize">{s.estado}</p>
-                <p className="text-xs mt-1 opacity-75">
-                  Resuelto el {formatearFecha(s.fecha_resolucion)}
-                </p>
-                {s.estado === 'aprobado' && (
-                  <p className="text-xs mt-2">
-                    El vehículo fue transferido al nuevo propietario.
-                  </p>
-                )}
-              </div>
-              {s.admin_notas && (
-                <div>
-                  <p className="text-xs text-stone-500 mb-1">Notas del administrador</p>
-                  <p className="text-sm text-navy-900 bg-stone-50 rounded-lg px-4 py-3">
-                    {s.admin_notas}
-                  </p>
-                </div>
-              )}
-            </section>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface Props {
-  onPendientesChange?: (n: number) => void;
+  onPendientesChange?: (pendientes: number) => void;
 }
 
 export default function SolicitudesTraspaso({ onPendientesChange }: Props) {
-  const [solicitudes, setSolicitudes]     = useState<SolicitudTraspasoAdmin[]>([]);
-  const [cargando, setCargando]           = useState(true);
-  const [filtro, setFiltro]               = useState<FiltroUI>('pendiente');
-  const [seleccionada, setSeleccionada]   = useState<SolicitudTraspasoAdmin | null>(null);
-  const [notas, setNotas]                 = useState('');
-  const [procesando, setProcesando]       = useState(false);
-  const [errorModal, setErrorModal]       = useState('');
+  const [filtro, setFiltro] = useState<EstadoSolicitudTraspaso | ''>('PENDIENTE_REVISION_ADMIN');
+  const [solicitudes, setSolicitudes] = useState<SolicitudTraspasoAdmin[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [detalle, setDetalle] = useState<SolicitudTraspasoAdmin | null>(null);
+  const [comentario, setComentario] = useState('');
+  const [resolviendo, setResolviendo] = useState(false);
+  const [errorResolver, setErrorResolver] = useState<string | null>(null);
 
-  async function cargar() {
+  const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const todas = await listarSolicitudesTraspaso();
-      setSolicitudes(todas);
-      onPendientesChange?.(todas.filter((s) => s.estado === 'pendiente').length);
+      const lista = await listarSolicitudesTraspaso(filtro || undefined);
+      setSolicitudes(lista);
+      if (filtro === 'PENDIENTE_REVISION_ADMIN') onPendientesChange?.(lista.length);
     } catch {
-      // El historial es secundario; no debe romper el panel.
+      // Silencioso: la tabla muestra el estado vacío.
     } finally {
       setCargando(false);
     }
-  }
+  }, [filtro, onPendientesChange]);
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
 
-  const solicitudesFiltradas = useMemo(() => {
-    if (filtro === 'pendiente')  return solicitudes.filter((s) => s.estado === 'pendiente');
-    if (filtro === 'resueltas')  return solicitudes.filter((s) => s.estado !== 'pendiente');
-    return solicitudes;
-  }, [solicitudes, filtro]);
-
-  async function resolver(estado: 'aprobado' | 'rechazado') {
-    if (!seleccionada) return;
-    const msg = estado === 'aprobado'
-      ? `¿Aprobar el traspaso de la placa ${seleccionada.placa}? Esto actualizará el propietario en la base de datos.`
-      : `¿Rechazar la solicitud de traspaso de la placa ${seleccionada.placa}?`;
-    if (!window.confirm(msg)) return;
-
-    setProcesando(true);
-    setErrorModal('');
+  async function resolver(estado: 'APROBADO' | 'RECHAZADO') {
+    if (!detalle || resolviendo) return;
+    setResolviendo(true);
+    setErrorResolver(null);
     try {
-      await resolverSolicitudAdmin(seleccionada.id, {
+      await resolverSolicitudAdmin(detalle.id, {
         estado,
-        admin_notas: notas || undefined,
+        comentario_admin: comentario.trim() || undefined,
       });
-      setSeleccionada(null);
-      setNotas('');
-      await cargar();
+      cerrarDetalle();
+      cargar();
     } catch (err) {
       const status = (err as { status?: number }).status;
-      if (status === 409) {
-        setErrorModal('Esta solicitud ya fue resuelta previamente.');
-      } else {
-        setErrorModal(err instanceof Error ? err.message : 'Error al procesar la solicitud.');
-      }
+      setErrorResolver(
+        status === 409
+          ? 'Esta solicitud ya fue resuelta por otro administrador.'
+          : err instanceof Error ? err.message : 'Error al resolver la solicitud'
+      );
     } finally {
-      setProcesando(false);
+      setResolviendo(false);
     }
   }
 
-  function abrirModal(s: SolicitudTraspasoAdmin) {
-    setSeleccionada(s);
-    setNotas('');
-    setErrorModal('');
-  }
-
-  function cerrarModal() {
-    setSeleccionada(null);
-    setNotas('');
-    setErrorModal('');
+  function cerrarDetalle() {
+    setDetalle(null);
+    setComentario('');
+    setErrorResolver(null);
   }
 
   return (
     <div>
-      {/* Filtros / tabs */}
-      <div className="flex gap-2 mb-5">
-        {(['todas', 'pendiente', 'resueltas'] as const).map((f) => (
+      {/* Filtros por estado */}
+      <div className="flex gap-1.5 mb-4">
+        {FILTROS.map((f) => (
           <button
-            key={f}
-            onClick={() => setFiltro(f)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filtro === f
-                ? 'bg-navy-700 text-white'
-                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-            }`}
+            key={f.etiqueta}
+            onClick={() => setFiltro(f.valor)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                        ${filtro === f.valor
+                          ? 'bg-navy-800 text-white'
+                          : 'text-navy-700 hover:bg-navy-50 border border-stone-200'}`}
           >
-            {f === 'todas' ? 'Todas' : f === 'pendiente' ? 'Pendientes' : 'Resueltas'}
+            {f.etiqueta}
           </button>
         ))}
       </div>
 
       {cargando ? (
-        <div className="flex items-center gap-2 text-stone-400 py-12">
-          <Loader2 size={18} className="animate-spin" />
-          Cargando solicitudes...
+        <div className="flex items-center gap-2 text-stone-500 text-sm py-8 justify-center">
+          <Loader2 size={16} className="animate-spin" /> Cargando solicitudes…
         </div>
-      ) : solicitudesFiltradas.length === 0 ? (
-        <p className="text-sm text-stone-500 py-12 text-center">
-          No hay solicitudes para este filtro.
-        </p>
+      ) : solicitudes.length === 0 ? (
+        <div className="card p-8 text-center text-stone-500 text-sm">
+          No hay solicitudes {FILTROS.find((f) => f.valor === filtro)?.etiqueta.toLowerCase()}.
+        </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-stone-200">
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 border-b border-stone-200">
-              <tr>
-                {['Fecha', 'Ciudadano', 'Documento', 'Email', 'Placa', 'Verif. IA', 'Estado', ''].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="text-left py-3 px-4 text-xs font-semibold uppercase
-                                 tracking-wider text-stone-600 whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {solicitudesFiltradas.map((s) => (
-                <tr
-                  key={s.id}
-                  className="hover:bg-stone-50 cursor-pointer transition-colors"
-                  onClick={() => abrirModal(s)}
-                >
-                  <td className="py-3 px-4 text-xs text-stone-500 whitespace-nowrap">
-                    {formatearFecha(s.fecha_solicitud)}
-                  </td>
-                  <td className="py-3 px-4 font-medium text-navy-900">{s.ciudadano_nombre}</td>
-                  <td className="py-3 px-4 font-mono text-xs text-stone-600">
-                    {s.ciudadano_documento}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-stone-600">{s.ciudadano_email}</td>
-                  <td className="py-3 px-4 font-mono font-semibold text-navy-800">{s.placa}</td>
-                  <td className="py-3 px-4"><BadgeVerificacion s={s} /></td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${
-                        BADGE_ESTADO[s.estado]
-                      }`}
-                    >
-                      {s.estado}
+        <div className="space-y-2.5">
+          {solicitudes.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setDetalle(s)}
+              className="card w-full p-4 flex items-center justify-between gap-4 text-left
+                         hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <img
+                  src={urlArchivo(s.foto_path)}
+                  alt={`Tarjeta de ${s.placa}`}
+                  className="w-16 h-11 object-cover rounded-md border border-stone-200 shrink-0"
+                />
+                <div className="min-w-0">
+                  <p className="font-mono font-semibold text-navy-900">
+                    {s.placa}
+                    <span className="font-sans font-normal text-stone-500 text-sm ml-2">
+                      {s.vehiculo_marca ?? ''} {s.vehiculo_linea ?? ''}
                     </span>
-                  </td>
-                  <td className="py-3 px-4 text-stone-400">
-                    <ChevronRight size={16} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </p>
+                  <p className="text-xs text-stone-500 truncate">
+                    Solicita: {s.ciudadano_nombre} (C.C. {s.ciudadano_documento}) · {formatearFecha(s.creado_en)}
+                  </p>
+                </div>
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 ${BADGE_ESTADO[s.estado].clase}`}>
+                {BADGE_ESTADO[s.estado].texto}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
-      {seleccionada && (
-        <ModalDetalle
-          solicitud={seleccionada}
-          notas={notas}
-          onNotasChange={setNotas}
-          procesando={procesando}
-          error={errorModal}
-          onResolver={resolver}
-          onCerrar={cerrarModal}
-        />
+      {/* Modal de detalle y resolución */}
+      {detalle && (
+        <div
+          className="fixed inset-0 z-50 bg-navy-950/50 flex items-center justify-center p-4"
+          onClick={cerrarDetalle}
+        >
+          <div
+            className="card w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="font-display text-xl text-navy-900">
+                  Solicitud #{detalle.id} — {detalle.placa}
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">{formatearFecha(detalle.creado_en)}</p>
+              </div>
+              <button onClick={cerrarDetalle} aria-label="Cerrar detalle" className="p-1.5 rounded-lg hover:bg-stone-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            <img
+              src={urlArchivo(detalle.foto_path)}
+              alt={`Tarjeta de propiedad de ${detalle.placa}`}
+              className="w-full rounded-lg border border-stone-200 mb-4"
+            />
+
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
+              <div>
+                <dt className="text-stone-500 text-xs">Solicitante</dt>
+                <dd className="text-navy-900">{detalle.ciudadano_nombre}</dd>
+              </div>
+              <div>
+                <dt className="text-stone-500 text-xs">Cédula solicitante</dt>
+                <dd className="text-navy-900">{detalle.ciudadano_documento}</dd>
+              </div>
+              <div>
+                <dt className="text-stone-500 text-xs">Vehículo</dt>
+                <dd className="text-navy-900">
+                  {detalle.vehiculo_marca ?? '—'} {detalle.vehiculo_linea ?? ''} {detalle.vehiculo_modelo ?? ''}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-stone-500 text-xs">Propietario actual</dt>
+                <dd className="text-navy-900">
+                  {detalle.vehiculo_propietario ?? '—'}
+                  {detalle.vehiculo_documento_propietario ? ` (C.C. ${detalle.vehiculo_documento_propietario})` : ''}
+                </dd>
+              </div>
+            </dl>
+
+            {detalle.estado === 'PENDIENTE_REVISION_ADMIN' ? (
+              <>
+                <label htmlFor="comentario" className="block text-sm font-medium text-navy-900 mb-1.5">
+                  Comentario (opcional)
+                </label>
+                <textarea
+                  id="comentario"
+                  value={comentario}
+                  onChange={(e) => setComentario(e.target.value)}
+                  rows={2}
+                  placeholder="Visible para el ciudadano"
+                  className="w-full px-3.5 py-2 text-sm rounded-lg border border-stone-300 mb-3
+                             focus:outline-none focus:ring-2 focus:ring-navy-400 focus:border-transparent"
+                />
+                {errorResolver && (
+                  <p className="text-sm text-coral-700 mb-3">{errorResolver}</p>
+                )}
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={() => resolver('APROBADO')}
+                    disabled={resolviendo}
+                    className="btn flex-1 bg-green-600 text-white hover:bg-green-700 shadow-sm"
+                  >
+                    {resolviendo ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                    Aprobar traspaso
+                  </button>
+                  <button
+                    onClick={() => resolver('RECHAZADO')}
+                    disabled={resolviendo}
+                    className="btn-accent flex-1"
+                  >
+                    {resolviendo ? <Loader2 size={15} className="animate-spin" /> : <XCircle size={15} />}
+                    Rechazar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className={`p-3 rounded-lg text-sm ${BADGE_ESTADO[detalle.estado].clase}`}>
+                Solicitud {BADGE_ESTADO[detalle.estado].texto.toLowerCase()}
+                {detalle.comentario_admin ? ` — "${detalle.comentario_admin}"` : ''}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

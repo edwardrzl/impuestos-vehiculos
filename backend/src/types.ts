@@ -72,28 +72,48 @@ export interface CiudadanoPayload {
   rol: 'ciudadano';
 }
 
-export type EstadoSolicitud = 'pendiente' | 'aprobado' | 'rechazado';
-
-// Lo que Claude Vision devuelve tras analizar la tarjeta de propiedad.
-export interface ResultadoIA {
-  es_tarjeta_propiedad: boolean;
-  placa_extraida: string | null;
-  documento_extraido: string | null;
-  confianza: 'alta' | 'media' | 'baja';
-  observaciones: string;
-}
+export type EstadoSolicitudTraspaso = 'PENDIENTE_REVISION_ADMIN' | 'APROBADO' | 'RECHAZADO';
 
 export interface SolicitudTraspaso {
   id: number;
-  placa: string;
   ciudadano_id: number;
-  foto_tarjeta_path: string;
-  estado: EstadoSolicitud;
-  resultado_ia: string | null; // JSON serializado de ResultadoIA
-  validacion_db: number;       // 0 | 1 (SQLite no tiene boolean nativo)
-  fecha_solicitud: string;
-  fecha_resolucion: string | null;
-  admin_notas: string | null;
+  placa: string;
+  foto_path: string;
+  estado: EstadoSolicitudTraspaso;
+  comentario_admin: string | null;
+  creado_en: string;
+  actualizado_en: string;
+}
+
+export interface IntentoValidacionTraspaso {
+  id: number;
+  ciudadano_id: number;
+  placa: string;
+  fecha: string;
+  resultado: 'aprobado' | 'rechazado';
+  razon_rechazo: string | null;
+}
+
+// Solicitud con datos del ciudadano y del vehículo, resultado del JOIN admin.
+export interface SolicitudTraspasoAdmin extends SolicitudTraspaso {
+  ciudadano_nombre: string;
+  ciudadano_email: string;
+  ciudadano_documento: string;
+  vehiculo_marca: string | null;
+  vehiculo_linea: string | null;
+  vehiculo_modelo: number | null;
+  vehiculo_propietario: string | null;
+  vehiculo_documento_propietario: string | null;
+}
+
+// Respuesta estructurada de la IA que valida la foto de la tarjeta de propiedad.
+// La IA solo extrae y evalúa la imagen; las reglas de negocio las aplica el service.
+export interface ResultadoValidacionIA {
+  esTarjetaDePropiedad: boolean;
+  legibilidad: 'alta' | 'media' | 'baja';
+  placaExtraida: string | null;
+  cedulaPropietarioExtraida: string | null;
+  observaciones: string;
 }
 
 export interface FiltrosVehiculos {
@@ -123,18 +143,6 @@ export interface StatsAdmin {
   vigencias_pendientes: number;
   vigencias_pagadas: number;
   monto_recaudado: number;
-}
-
-// Solicitud con datos del ciudadano y del vehículo, resultado del JOIN admin.
-export interface SolicitudTraspasoAdmin extends SolicitudTraspaso {
-  ciudadano_nombre: string;
-  ciudadano_email: string;
-  ciudadano_documento: string;
-  vehiculo_marca: string | null;
-  vehiculo_linea: string | null;
-  vehiculo_modelo: number | null;
-  vehiculo_propietario: string | null;
-  vehiculo_documento_propietario: string | null;
 }
 
 export interface ResultadoCargaCSV {

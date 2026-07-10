@@ -69,17 +69,27 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS solicitudes_traspaso (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    placa TEXT NOT NULL,
     ciudadano_id INTEGER NOT NULL,
-    foto_tarjeta_path TEXT NOT NULL,
-    estado TEXT NOT NULL DEFAULT 'pendiente'
-      CHECK(estado IN ('pendiente', 'aprobado', 'rechazado')),
-    resultado_ia TEXT,
-    validacion_db INTEGER NOT NULL DEFAULT 0,
-    fecha_solicitud TEXT NOT NULL,
-    fecha_resolucion TEXT,
-    admin_notas TEXT,
-    FOREIGN KEY (placa) REFERENCES vehiculos(placa),
+    placa TEXT NOT NULL,
+    foto_path TEXT NOT NULL,
+    estado TEXT NOT NULL DEFAULT 'PENDIENTE_REVISION_ADMIN'
+      CHECK(estado IN ('PENDIENTE_REVISION_ADMIN', 'APROBADO', 'RECHAZADO')),
+    comentario_admin TEXT,
+    creado_en TEXT NOT NULL,
+    actualizado_en TEXT NOT NULL,
+    FOREIGN KEY (ciudadano_id) REFERENCES ciudadanos(id),
+    FOREIGN KEY (placa) REFERENCES vehiculos(placa)
+  );
+
+  -- Registro de cada validación IA ejecutada (aprobada o rechazada): es la
+  -- base del límite de 5 intentos por usuario+placa en 24 h.
+  CREATE TABLE IF NOT EXISTS intentos_validacion_traspaso (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ciudadano_id INTEGER NOT NULL,
+    placa TEXT NOT NULL,
+    fecha TEXT NOT NULL,
+    resultado TEXT NOT NULL CHECK(resultado IN ('aprobado', 'rechazado')),
+    razon_rechazo TEXT,
     FOREIGN KEY (ciudadano_id) REFERENCES ciudadanos(id)
   );
 `);

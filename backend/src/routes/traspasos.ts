@@ -1,18 +1,21 @@
+// routes/traspasos.ts - Endpoints de solicitudes de traspaso.
+// Solo definen la ruta y delegan en el controller. Sin lógica.
+
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import multer from 'multer';
 import { ciudadanoAuthMiddleware } from '../middleware/ciudadanoAuthMiddleware.js';
-import { uploadTarjeta } from '../middleware/upload.js';
+import { uploadTarjetaTraspaso } from '../middleware/upload.js';
 import * as traspasoController from '../controllers/traspasoController.js';
 
 const router = Router();
 
 // Captura errores de multer (tipo rechazado, tamaño excedido) antes del controller.
-function manejarSubidaTarjeta(req: Request, res: Response, next: NextFunction): void {
-  uploadTarjeta.single('foto_tarjeta')(req, res, (err: unknown) => {
+function manejarSubidaFoto(req: Request, res: Response, next: NextFunction): void {
+  uploadTarjetaTraspaso.single('foto')(req, res, (err: unknown) => {
     if (err instanceof multer.MulterError) {
       res.status(400).json({
         error: err.code === 'LIMIT_FILE_SIZE'
-          ? 'La imagen no puede superar los 5 MB'
+          ? 'La imagen no puede superar los 8 MB'
           : err.message,
       });
       return;
@@ -25,7 +28,7 @@ function manejarSubidaTarjeta(req: Request, res: Response, next: NextFunction): 
   });
 }
 
-router.post('/', ciudadanoAuthMiddleware, manejarSubidaTarjeta, traspasoController.crearSolicitud);
-router.get('/mis-solicitudes', ciudadanoAuthMiddleware, traspasoController.listarMisSolicitudes);
+router.post('/solicitar', ciudadanoAuthMiddleware, manejarSubidaFoto, traspasoController.solicitar);
+router.get('/mis-solicitudes', ciudadanoAuthMiddleware, traspasoController.misSolicitudes);
 
 export default router;

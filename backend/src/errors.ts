@@ -15,6 +15,9 @@ export class CredencialesInvalidas extends ErrorDeNegocio {}
 
 export class ConflictoRecurso extends ErrorDeNegocio {}
 
+// 429: el cliente superó un límite de uso (p. ej. intentos de validación IA).
+export class LimiteExcedido extends ErrorDeNegocio {}
+
 // 502: una dependencia externa (la API de IA) falló al procesar la petición.
 export class ErrorPasarela extends ErrorDeNegocio {}
 

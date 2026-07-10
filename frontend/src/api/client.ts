@@ -15,11 +15,12 @@ import type {
   ResultadoGenerarVigencias,
   InfoCiudadano,
   LoginCiudadanoResponse,
-  SolicitudTraspasoResponse,
-  SolicitudTraspasoHistorial,
-  SolicitudTraspasoAdmin,
   MensajeChat,
   RespuestaChat,
+  SolicitudTraspaso,
+  ResultadoSolicitudTraspaso,
+  SolicitudTraspasoAdmin,
+  EstadoSolicitudTraspaso,
 } from '../types';
 import { leerToken, obtenerTokenCiudadano } from '../auth/session';
 
@@ -181,14 +182,26 @@ export function loginCiudadano(email: string, password: string): Promise<LoginCi
   });
 }
 
-// No usa requestCiudadano(): con multipart/form-data el navegador debe fijar
-// Content-Type con su boundary. Adjunta manualmente el token del ciudadano.
-export async function crearSolicitudTraspaso(datos: FormData): Promise<SolicitudTraspasoResponse> {
+// URL absoluta de un archivo subido (p. ej. "uploads/traspasos/1_x_ABC123.jpg").
+// En dev pasa por el proxy de Vite; en producción apunta al backend.
+export function urlArchivo(path: string): string {
+  return `${BASE_URL}/${path}`;
+}
+
+// ─── API ciudadano — traspasos ────────────────────────────────────────────────
+
+// No usa requestCiudadano(): con multipart/form-data el navegador debe fijar el
+// Content-Type con su boundary. Propaga el status para distinguir 429/503 en la UI.
+export async function solicitarTraspaso(placa: string, foto: File): Promise<ResultadoSolicitudTraspaso> {
   const token = obtenerTokenCiudadano();
-  const response = await fetch(`${BASE_URL}/api/traspasos`, {
+  const form = new FormData();
+  form.append('placa', placa);
+  form.append('foto', foto);
+
+  const response = await fetch(`${BASE_URL}/api/traspasos/solicitar`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: datos,
+    body: form,
   });
   if (!response.ok) {
     let mensaje = 'Error al enviar la solicitud';
@@ -196,20 +209,19 @@ export async function crearSolicitudTraspaso(datos: FormData): Promise<Solicitud
       const data = (await response.json()) as ApiError;
       mensaje = data.message ?? data.error ?? mensaje;
     } catch { /* sin body */ }
-    // Propaga el status para distinguir 400 / 502 / 503 en la página.
     throw Object.assign(new Error(mensaje), { status: response.status });
   }
-  return response.json() as Promise<SolicitudTraspasoResponse>;
+  return response.json() as Promise<ResultadoSolicitudTraspaso>;
 }
 
-export function listarMisSolicitudes(): Promise<SolicitudTraspasoHistorial[]> {
-  return requestCiudadano<SolicitudTraspasoHistorial[]>('/api/traspasos/mis-solicitudes');
+export function listarMisSolicitudes(): Promise<SolicitudTraspaso[]> {
+  return requestCiudadano<SolicitudTraspaso[]>('/api/traspasos/mis-solicitudes');
 }
 
 // ─── API admin — traspasos ────────────────────────────────────────────────────
 
 export function listarSolicitudesTraspaso(
-  estado?: 'pendiente' | 'aprobado' | 'rechazado'
+  estado?: EstadoSolicitudTraspaso
 ): Promise<SolicitudTraspasoAdmin[]> {
   const url = estado
     ? `/api/admin/solicitudes-traspaso?estado=${estado}`
@@ -217,10 +229,10 @@ export function listarSolicitudesTraspaso(
   return request<SolicitudTraspasoAdmin[]>(url);
 }
 
-// No usa request(): necesitamos propagar el status HTTP para distinguir 409 en el modal.
+// No usa request(): propaga el status HTTP para distinguir 409 (ya resuelta).
 export async function resolverSolicitudAdmin(
   id: number,
-  datos: { estado: 'aprobado' | 'rechazado'; admin_notas?: string }
+  datos: { estado: 'APROBADO' | 'RECHAZADO'; comentario_admin?: string }
 ): Promise<void> {
   const token = leerToken();
   const response = await fetch(`${BASE_URL}/api/admin/solicitudes-traspaso/${id}/resolver`, {

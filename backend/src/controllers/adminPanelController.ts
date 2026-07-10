@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import * as adminPanelService from '../services/adminPanelService.js';
 import * as traspasoService from '../services/traspasoService.js';
 import { responderConError } from './errorHttp.js';
-import type { FiltrosVehiculos } from '../types.js';
+import type { FiltrosVehiculos, EstadoSolicitudTraspaso } from '../types.js';
 
 /** GET /api/admin/vehiculos?marca=&clase=&modelo=&tipo_servicio=&estado_pago=&pagina= */
 export function listarVehiculos(req: Request, res: Response): void {
@@ -61,21 +61,22 @@ export function obtenerStats(_req: Request, res: Response): void {
 export function listarSolicitudesTraspaso(req: Request, res: Response): void {
   try {
     const { estado } = req.query as Record<string, string | undefined>;
-    const ESTADOS_VALIDOS = ['pendiente', 'aprobado', 'rechazado'] as const;
-    const filtro = ESTADOS_VALIDOS.includes(estado as typeof ESTADOS_VALIDOS[number])
-      ? (estado as 'pendiente' | 'aprobado' | 'rechazado')
+    const ESTADOS_VALIDOS: EstadoSolicitudTraspaso[] = [
+      'PENDIENTE_REVISION_ADMIN',
+      'APROBADO',
+      'RECHAZADO',
+    ];
+    const filtro = ESTADOS_VALIDOS.includes(estado as EstadoSolicitudTraspaso)
+      ? (estado as EstadoSolicitudTraspaso)
       : undefined;
-    res.json(traspasoService.listarSolicitudes(filtro));
+    res.json(traspasoService.listarSolicitudesAdmin(filtro));
   } catch (error) {
     responderConError(res, error, 'Error listando solicitudes de traspaso');
   }
 }
 
 /** PUT /api/admin/solicitudes-traspaso/:id/resolver */
-export function resolverSolicitudTraspaso(
-  req: Request<{ id: string }>,
-  res: Response
-): void {
+export function resolverSolicitudTraspaso(req: Request<{ id: string }>, res: Response): void {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -83,18 +84,20 @@ export function resolverSolicitudTraspaso(
       return;
     }
 
-    const { estado, admin_notas } = req.body as { estado: string; admin_notas?: string };
+    const { estado, comentario_admin } = req.body as {
+      estado: string;
+      comentario_admin?: string;
+    };
 
-    if (estado !== 'aprobado' && estado !== 'rechazado') {
-      res.status(400).json({ error: 'El estado debe ser "aprobado" o "rechazado".' });
+    if (estado !== 'APROBADO' && estado !== 'RECHAZADO') {
+      res.status(400).json({ error: 'El estado debe ser "APROBADO" o "RECHAZADO".' });
       return;
     }
 
     const actualizada = traspasoService.resolverSolicitud({
       id,
-      estado: estado as 'aprobado' | 'rechazado',
-      admin_notas: admin_notas ?? null,
-      adminId: req.adminAutenticado!.id,
+      estado,
+      comentario_admin: comentario_admin?.trim() || null,
     });
     res.json(actualizada);
   } catch (error) {

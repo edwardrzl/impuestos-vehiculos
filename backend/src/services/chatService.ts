@@ -1,6 +1,5 @@
-// El proxy corporativo (HTTPS_PROXY) ya queda configurado globalmente en
-// traspasoService.ts vía setGlobalDispatcher; server.ts siempre lo importa,
-// así que las llamadas de este módulo a Gemini también pasan por él.
+// El proxy corporativo (HTTPS_PROXY) queda configurado globalmente en server.ts
+// vía setGlobalDispatcher; las llamadas de este módulo a Gemini pasan por él.
 import { GoogleGenerativeAI, type Content, type Part } from '@google/generative-ai';
 import { GEMINI_API_KEY, GEMINI_CHAT_MODEL } from '../config.js';
 import { DatosInvalidos, ErrorPasarela, ServicioNoDisponible } from '../errors.js';

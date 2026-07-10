@@ -142,43 +142,29 @@ export interface LoginCiudadanoResponse {
   ciudadano: InfoCiudadano;
 }
 
-export type EstadoSolicitud = 'pendiente' | 'aprobado' | 'rechazado';
+// ─── Traspasos ────────────────────────────────────────────────────────────────
 
-export interface ResultadoIA {
-  es_tarjeta_propiedad: boolean;
-  placa_extraida: string | null;
-  documento_extraido: string | null;
-  confianza: 'alta' | 'media' | 'baja';
-  observaciones: string;
-}
+export type EstadoSolicitudTraspaso = 'PENDIENTE_REVISION_ADMIN' | 'APROBADO' | 'RECHAZADO';
 
-// Respuesta de POST /api/traspasos (201)
-export interface SolicitudTraspasoResponse {
+// Cada solicitud en GET /api/traspasos/mis-solicitudes
+export interface SolicitudTraspaso {
   id: number;
-  estado: 'pendiente';
-  validacion_ia: {
-    es_tarjeta_propiedad: boolean;
-    placa_extraida: string | null;
-    confianza: string;
-    observaciones: string;
-  };
-  validacion_db: boolean;
-  mensaje: string;
+  ciudadano_id: number;
+  placa: string;
+  foto_path: string;
+  estado: EstadoSolicitudTraspaso;
+  comentario_admin: string | null;
+  creado_en: string;
+  actualizado_en: string;
 }
+
+// Respuesta de POST /api/traspasos/solicitar: 201 si se creó, 200 si la IA rechazó.
+export type ResultadoSolicitudTraspaso =
+  | { aprobada: true; id: number; estado: 'PENDIENTE_REVISION_ADMIN'; mensaje: string }
+  | { aprobada: false; razon: string };
 
 // Solicitud enriquecida con datos del ciudadano y el vehículo (vista admin).
-// resultado_ia ya viene parseado desde el service del backend.
-export interface SolicitudTraspasoAdmin {
-  id: number;
-  placa: string;
-  ciudadano_id: number;
-  foto_tarjeta_path: string;
-  estado: EstadoSolicitud;
-  resultado_ia: ResultadoIA | null;
-  validacion_db: number;
-  fecha_solicitud: string;
-  fecha_resolucion: string | null;
-  admin_notas: string | null;
+export interface SolicitudTraspasoAdmin extends SolicitudTraspaso {
   ciudadano_nombre: string;
   ciudadano_email: string;
   ciudadano_documento: string;
@@ -187,20 +173,6 @@ export interface SolicitudTraspasoAdmin {
   vehiculo_modelo: number | null;
   vehiculo_propietario: string | null;
   vehiculo_documento_propietario: string | null;
-}
-
-// Cada solicitud en GET /api/traspasos/mis-solicitudes
-export interface SolicitudTraspasoHistorial {
-  id: number;
-  placa: string;
-  ciudadano_id: number;
-  foto_tarjeta_path: string;
-  estado: EstadoSolicitud;
-  resultado_ia: ResultadoIA | null;
-  validacion_db: number;
-  fecha_solicitud: string;
-  fecha_resolucion: string | null;
-  admin_notas: string | null;
 }
 
 // Resumen que devuelve POST /api/admin/vigencias/generar-anual

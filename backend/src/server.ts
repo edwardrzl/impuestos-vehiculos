@@ -5,6 +5,15 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { ProxyAgent, setGlobalDispatcher } from 'undici';
+
+// undici (el cliente fetch interno de Node.js) no lee HTTPS_PROXY / HTTP_PROXY
+// automáticamente. El dispatcher global hace que todas las peticiones outbound
+// (p. ej. las del SDK de Gemini en el chat y la validación) pasen por el proxy.
+const proxyUrl = process.env.HTTPS_PROXY ?? process.env.HTTP_PROXY;
+if (proxyUrl) {
+  setGlobalDispatcher(new ProxyAgent(proxyUrl));
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

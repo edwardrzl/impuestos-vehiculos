@@ -1,14 +1,44 @@
 import db from './db.js';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function runSeed(): void {
 
 console.log('🌱 Limpiando datos previos...');
 
-db.exec('DELETE FROM pagos');
-db.exec('DELETE FROM vigencias');
-db.exec('DELETE FROM vehiculos');
+// Orden inverso a las dependencias FK: primero las tablas hijas,
+// después las tablas a las que referencian.
+db.exec(`
+  DELETE FROM intentos_validacion_traspaso;
+  DELETE FROM solicitudes_traspaso;
+  DELETE FROM pagos;
+  DELETE FROM vigencias;
+  DELETE FROM ciudadanos;
+  DELETE FROM vehiculos;
+  DELETE FROM admins;
+`);
+
+// Reinicia los contadores AUTOINCREMENT para que los IDs empiecen en 1.
+try {
+  db.exec('DELETE FROM sqlite_sequence');
+} catch {
+  // En una BD recién creada sqlite_sequence aún no existe.
+}
+
+// Las fotos subidas (documentos y traspasos) quedan huérfanas al borrar
+// ciudadanos y solicitudes: se eliminan también del disco.
+const uploadsBase = path.join(__dirname, '..', 'uploads');
+for (const sub of ['documentos', 'traspasos']) {
+  const dir = path.join(uploadsBase, sub);
+  if (!fs.existsSync(dir)) continue;
+  for (const archivo of fs.readdirSync(dir)) {
+    fs.unlinkSync(path.join(dir, archivo));
+  }
+}
 
 console.log('📥 Insertando vehículos...');
 
@@ -63,16 +93,16 @@ const vehiculos: VehiculoSeed[] = [
     documento_propietario: '79123456',
   },
   {
-    placa: 'MOT001',
+    placa: 'QGJ95G',
     clase: 'MOTOCICLETA',
-    marca: 'YAMAHA',
-    linea: 'FZ 2.0',
-    modelo: 2023,
+    marca: 'BAJAJ',
+    linea: 'PULSAR 200 NS',
+    modelo: 2024,
     tipo_servicio: 'PARTICULAR',
     capacidad: 'PASAJEROS /2/150',
-    avaluo: 8200000,
-    propietario: 'ANA SOFIA CASTRO',
-    documento_propietario: '1102345678',
+    avaluo: 8900000,
+    propietario: 'EDWARD STIVEN RODRIGUEZ',
+    documento_propietario: '1099734202',
   },
   {
     placa: 'WXY456',
@@ -85,6 +115,18 @@ const vehiculos: VehiculoSeed[] = [
     avaluo: 42000000,
     propietario: 'PEDRO RAMIREZ TORRES',
     documento_propietario: '80123456',
+  },
+  {
+    placa: 'MOT001',
+    clase: 'MOTOCICLETA',
+    marca: 'YAMAHA',
+    linea: 'FZ 2.0',
+    modelo: 2023,
+    tipo_servicio: 'PARTICULAR',
+    capacidad: 'PASAJEROS /2/150',
+    avaluo: 9800000,
+    propietario: 'LAURA GONZALEZ DIAZ',
+    documento_propietario: '52987654',
   },
 ];
 

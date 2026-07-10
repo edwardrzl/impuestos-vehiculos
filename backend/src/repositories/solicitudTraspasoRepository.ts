@@ -1,60 +1,43 @@
 import db from '../db.js';
-import type { SolicitudTraspaso, SolicitudTraspasoAdmin } from '../types.js';
+import type { SolicitudTraspaso, SolicitudTraspasoAdmin, EstadoSolicitudTraspaso } from '../types.js';
 
-const insertarSolicitud = db.prepare(`
+const insertarStmt = db.prepare(`
   INSERT INTO solicitudes_traspaso
-    (placa, ciudadano_id, foto_tarjeta_path, estado, resultado_ia, validacion_db, fecha_solicitud)
-  VALUES (@placa, @ciudadano_id, @foto_tarjeta_path, 'pendiente', @resultado_ia, @validacion_db, @fecha_solicitud)
+    (ciudadano_id, placa, foto_path, estado, creado_en, actualizado_en)
+  VALUES (@ciudadano_id, @placa, @foto_path, 'PENDIENTE_REVISION_ADMIN', @ahora, @ahora)
 `);
 
 const listarPorCiudadanoStmt = db.prepare(`
-  SELECT id, placa, ciudadano_id, foto_tarjeta_path, estado, resultado_ia,
-         validacion_db, fecha_solicitud, fecha_resolucion, admin_notas
-  FROM solicitudes_traspaso
+  SELECT * FROM solicitudes_traspaso
   WHERE ciudadano_id = ?
-  ORDER BY fecha_solicitud DESC
-`);
-
-const buscarPorIdStmt = db.prepare(`
-  SELECT id, placa, ciudadano_id, foto_tarjeta_path, estado, resultado_ia,
-         validacion_db, fecha_solicitud, fecha_resolucion, admin_notas
-  FROM solicitudes_traspaso
-  WHERE id = ?
+  ORDER BY creado_en DESC
 `);
 
 export function crearSolicitud(datos: {
-  placa: string;
   ciudadano_id: number;
-  foto_tarjeta_path: string;
-  resultado_ia: string | null;
-  validacion_db: number;
+  placa: string;
+  foto_path: string;
 }): number {
-  const resultado = insertarSolicitud.run({
-    ...datos,
-    fecha_solicitud: new Date().toISOString(),
-  });
-  return resultado.lastInsertRowid as number;
+  const resultado = insertarStmt.run({ ...datos, ahora: new Date().toISOString() });
+  return Number(resultado.lastInsertRowid);
 }
 
 export function listarPorCiudadano(ciudadano_id: number): SolicitudTraspaso[] {
   return listarPorCiudadanoStmt.all(ciudadano_id) as SolicitudTraspaso[];
 }
 
-export function buscarPorId(id: number): SolicitudTraspaso | undefined {
-  return buscarPorIdStmt.get(id) as SolicitudTraspaso | undefined;
-}
-
 // ─── Queries para el panel de administración ──────────────────────────────────
 
+const buscarPorIdStmt = db.prepare('SELECT * FROM solicitudes_traspaso WHERE id = ?');
+
 const COLUMNAS_ADMIN = `
-  st.id, st.placa, st.ciudadano_id, st.foto_tarjeta_path, st.estado,
-  st.resultado_ia, st.validacion_db, st.fecha_solicitud, st.fecha_resolucion, st.admin_notas,
-  c.nombre  AS ciudadano_nombre,
-  c.email   AS ciudadano_email,
+  st.*,
+  c.nombre    AS ciudadano_nombre,
+  c.email     AS ciudadano_email,
   c.documento AS ciudadano_documento,
-  v.marca   AS vehiculo_marca,
-  v.linea   AS vehiculo_linea,
-  v.modelo  AS vehiculo_modelo,
+  v.marca     AS vehiculo_marca,
+  v.linea     AS vehiculo_linea,
+  v.modelo    AS vehiculo_modelo,
   v.propietario           AS vehiculo_propietario,
   v.documento_propietario AS vehiculo_documento_propietario
 `;
@@ -64,7 +47,7 @@ const listarTodasAdminStmt = db.prepare(`
   FROM solicitudes_traspaso st
   JOIN ciudadanos c ON st.ciudadano_id = c.id
   LEFT JOIN vehiculos v ON st.placa = v.placa
-  ORDER BY st.fecha_solicitud DESC
+  ORDER BY st.creado_en DESC
 `);
 
 const listarPorEstadoAdminStmt = db.prepare(`
@@ -73,18 +56,20 @@ const listarPorEstadoAdminStmt = db.prepare(`
   JOIN ciudadanos c ON st.ciudadano_id = c.id
   LEFT JOIN vehiculos v ON st.placa = v.placa
   WHERE st.estado = ?
-  ORDER BY st.fecha_solicitud DESC
+  ORDER BY st.creado_en DESC
 `);
 
 const resolverStmt = db.prepare(`
   UPDATE solicitudes_traspaso
-  SET estado = @estado, admin_notas = @admin_notas, fecha_resolucion = @fecha_resolucion
+  SET estado = @estado, comentario_admin = @comentario_admin, actualizado_en = @actualizado_en
   WHERE id = @id
 `);
 
-export function listarSolicitudes(
-  filtro?: 'pendiente' | 'aprobado' | 'rechazado'
-): SolicitudTraspasoAdmin[] {
+export function buscarPorId(id: number): SolicitudTraspaso | undefined {
+  return buscarPorIdStmt.get(id) as SolicitudTraspaso | undefined;
+}
+
+export function listarAdmin(filtro?: EstadoSolicitudTraspaso): SolicitudTraspasoAdmin[] {
   if (filtro) {
     return listarPorEstadoAdminStmt.all(filtro) as SolicitudTraspasoAdmin[];
   }
@@ -93,12 +78,9 @@ export function listarSolicitudes(
 
 export function resolverSolicitud(datos: {
   id: number;
-  estado: 'aprobado' | 'rechazado';
-  admin_notas: string | null;
+  estado: 'APROBADO' | 'RECHAZADO';
+  comentario_admin: string | null;
 }): number {
-  const resultado = resolverStmt.run({
-    ...datos,
-    fecha_resolucion: new Date().toISOString(),
-  });
+  const resultado = resolverStmt.run({ ...datos, actualizado_en: new Date().toISOString() });
   return resultado.changes as number;
 }
